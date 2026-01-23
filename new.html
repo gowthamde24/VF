@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Project Visualizations</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'base', flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis' } });
+    </script>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background: #f0f0f0; text-align: center; }
+        .section { background: white; padding: 30px; margin-bottom: 50px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; color: #333; }
+        .img-placeholder { width: 100%; height: 400px; background: #222; display: flex; align-items: center; justify-content: center; color: white; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. WIRING DIAGRAM -->
+    <div class="section">
+        <h2>1. System Wiring Schematic (Control Box)</h2>
+        <div class="mermaid">
+            graph TD
+                classDef pwr fill:#ffebee,stroke:#e74c3c,stroke-width:2px;
+                classDef signal fill:#e8f5e9,stroke:#2ecc71,stroke-width:2px;
+                
+                subgraph CONTROL_BOX [CONTROL BOX]
+                    direction TB
+                    PSU[12V Power Supply]:::pwr
+                    Buck[5V Converter]:::pwr
+                    Pi[Raspberry Pi 5]:::signal
+                    Relay[8-Channel Relay]:::signal
+                    ADC[ADS1115 ADC]:::signal
+                    
+                    PSU ==> Relay
+                    PSU --> Buck
+                    Buck --> Pi
+                    Buck --> ADC
+                    Pi --> Relay
+                    Pi --> ADC
+                end
+                
+                subgraph SENSORS
+                    BME[BME280] --> Pi
+                    PH[pH Probe] --> ADC
+                    EC[EC Probe] --> ADC
+                    Level[Water Level] --> ADC
+                end
+                
+                subgraph ACTUATORS
+                    Relay --> Pump[Water Pump]
+                    Relay --> Light[Grow Lights]
+                    Relay --> Fan[Fan]
+                    Relay --> Doser1[pH Down]
+                    Relay --> Doser2[pH Up]
+                end
+        </div>
+    </div>
+
+    <!-- 2. LOGIC FLOWCHART -->
+    <div class="section">
+        <h2>2. Automation Logic Flow</h2>
+        <div class="mermaid">
+            flowchart TD
+                Start([Start Loop]) --> Read[Read Sensors]
+                Read --> Safety{Safety Check?}
+                Safety -- Fail --> Emergency[STOP ALL]
+                Safety -- Pass --> Logic
+                
+                subgraph Logic [Control Logic]
+                    Time{06:00-20:00?} -- Yes --> Lights[Lights ON]
+                    Time -- No --> LightsOff[Lights OFF]
+                    
+                    Temp{> 25C?} -- Yes --> Fan[Fan ON]
+                    
+                    Timer{New Hour?} -- Yes --> Water[Pump ON (5 min)]
+                    
+                    pH{pH > 6.5?} -- Yes --> Dose[Dose Acid]
+                end
+                
+                Logic --> Update[Update Dashboard]
+                Update --> Wait[Wait 2s] --> Start
+        </div>
+    </div>
+
+    <!-- 3. DASHBOARD PREVIEW -->
+    <div class="section">
+        <h2>3. Live Dashboard Interface</h2>
+        <!-- This is a CSS mock of the dashboard for screenshot purposes -->
+        <div style="background: #0f0f13; color: white; padding: 20px; border-radius: 15px; text-align: left; font-family: monospace;">
+            <div style="border-bottom: 2px solid #00f3ff; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between;">
+                <span style="font-size: 1.5em; color: #00f3ff;">VERTICAL FARM OS</span>
+                <span>12:45:00</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div style="background: #1a1a2e; padding: 20px; border-radius: 10px; border: 1px solid #333;">
+                    <div style="color: #888;">TEMPERATURE</div>
+                    <div style="font-size: 2.5em; font-weight: bold;">25.4 °C</div>
+                </div>
+                <div style="background: #1a1a2e; padding: 20px; border-radius: 10px; border: 1px solid #333;">
+                    <div style="color: #888;">WATER pH</div>
+                    <div style="font-size: 2.5em; font-weight: bold; color: #00ff9d;">6.02 pH</div>
+                </div>
+                <div style="background: #1a1a2e; padding: 20px; border-radius: 10px; border: 1px solid #333;">
+                    <div style="color: #888;">HUMIDITY</div>
+                    <div style="font-size: 2.5em; font-weight: bold; color: #00f3ff;">58 %</div>
+                </div>
+                <div style="background: #1a1a2e; padding: 20px; border-radius: 10px; border: 1px solid #333;">
+                    <div style="color: #888;">SYSTEM STATUS</div>
+                    <div style="font-size: 2.5em; font-weight: bold; color: #00ff9d;">NORMAL</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
