@@ -1,0 +1,4 @@
+adafruit-circuitpython-bme280
+adafruit-circuitpython-ads1x15
+adafruit-blinka
+smbus2

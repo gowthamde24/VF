@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VERTICAL FARM OS</title>
+    <!-- Use Google Fonts if online, fallback to system fonts if offline -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #0f0f13;
+            --panel-bg: rgba(25, 25, 35, 0.95);
+            --neon-blue: #00f3ff;
+            --neon-green: #00ff9d;
+            --neon-pink: #ff0055;
+            --neon-purple: #bc13fe;
+            --text-main: #ffffff;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+            height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(188, 19, 254, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 243, 255, 0.1) 0%, transparent 40%);
+        }
+
+        /* GRID LAYOUT */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            grid-template-rows: 80px 1fr 150px;
+            gap: 20px;
+            height: 90vh;
+        }
+
+        /* HEADER */
+        .header {
+            grid-column: 1 / 4;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--neon-blue);
+            padding: 0 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        /* CARD STYLES */
+        .card {
+            background: var(--panel-bg);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: transform 0.3s;
+        }
+
+        .label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: bold;
+        }
+
+        .unit { font-size: 1.2rem; color: #aaa; margin-left: 5px; }
+
+        /* CIRCULAR PROGRESS (SVG) */
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        /* ACTUATORS ROW */
+        .actuators {
+            grid-column: 2 / 3;
+            grid-row: 3 / 4;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 10px;
+        }
+
+        .device {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0.4;
+            transition: all 0.3s;
+        }
+
+        .device.on {
+            opacity: 1;
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        .icon-box {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+            border: 2px solid transparent;
+        }
+
+        /* SVG ICONS CONFIG */
+        .device svg {
+            width: 32px;
+            height: 32px;
+            fill: currentColor;
+        }
+
+        /* ANIMATIONS */
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        .device.on .icon-box {
+            border-color: currentColor;
+            box-shadow: 0 0 20px currentColor;
+        }
+
+        .spin-anim svg { animation: spin 2s linear infinite; }
+        .pulse-anim svg { animation: pulse 1s ease-in-out infinite; }
+
+        /* WORKFLOW MODAL */
+        #workflow-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .workflow-diagram {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .wf-step {
+            background: #1a1a2e;
+            padding: 20px;
+            border: 2px solid var(--neon-blue);
+            border-radius: 10px;
+            text-align: center;
+            width: 150px;
+            position: relative;
+        }
+
+        .wf-arrow { font-size: 2rem; color: #555; }
+
+        .wf-step.active {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 20px var(--neon-green);
+            color: var(--neon-green);
+        }
+
+        .close-btn {
+            margin-top: 30px;
+            padding: 10px 30px;
+            background: var(--neon-pink);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="grid-container dashboard-grid">
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <h1>VERTICAL FARM <span style="font-size: 0.5em; color:var(--neon-purple);">OS</span></h1>
+            <div style="font-size: 0.8rem; color: #888; letter-spacing: 2px;">LIVE MONITORING SYSTEM</div>
+        </div>
+        <div style="text-align: right;">
+            <div id="clock" style="font-size: 2rem; font-weight: bold; font-family: 'Orbitron', sans-serif;">12:00:00</div>
+            <button onclick="toggleWorkflow()" style="background:none; border:1px solid var(--neon-blue); color:var(--neon-blue); padding:5px 15px; cursor:pointer; margin-top:5px; border-radius:5px;">VIEW WORKFLOW</button>
+        </div>
+    </div>
+
+    <!-- Left Column: Environment -->
+    <div class="card" style="grid-row: 2 / 4;">
+        <div class="label">AIR TEMPERATURE</div>
+        <div style="position:relative; width: 150px; height: 150px; margin: 20px 0;">
+            <svg width="150" height="150">
+                <circle stroke="#222" stroke-width="10" fill="transparent" r="60" cx="75" cy="75"/>
+                <circle id="temp-ring" stroke="#ff0055" stroke-width="10" fill="transparent" r="60" cx="75" cy="75"
+                        stroke-dasharray="377" stroke-dashoffset="100" class="progress-ring-circle"/>
+            </svg>
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
+                <div class="value" id="val-temp" style="font-size: 2.5rem;">25</div>
+                <div class="unit">°C</div>
+            </div>
+        </div>
+        
+        <div class="label" style="margin-top: 30px;">HUMIDITY</div>
+        <div class="value" style="color:var(--neon-blue);"><span id="val-hum">60</span><span class="unit">%</span></div>
+    </div>
+
+    <!-- Center: Main Status & AI -->
+    <div class="card" style="grid-column: 2 / 3;">
+        <div class="label">SYSTEM STATUS</div>
+        <div id="sys-status" class="value" style="color:var(--neon-green); font-size: 3rem; margin: 20px 0;">NORMAL</div>
+        <div style="width: 100%; border-top: 1px solid #333; margin: 20px 0;"></div>
+        
+        <div class="label">AI ANOMALY DETECTION</div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+            <div style="width: 10px; height: 10px; background: var(--neon-green); border-radius: 50%; box-shadow: 0 0 10px var(--neon-green);"></div>
+            <div style="font-family: 'Orbitron', sans-serif; font-size: 1.2rem;">MODEL RUNNING</div>
+        </div>
+        <div id="ai-msg" style="color: #666; margin-top: 10px;">No anomalies detected in last 24h.</div>
+    </div>
+
+    <!-- Right Column: Water Chemistry -->
+    <div class="card" style="grid-row: 2 / 4;">
+        <div class="label">WATER PH</div>
+        <div style="position:relative; width: 150px; height: 150px; margin: 20px 0;">
+            <svg width="150" height="150">
+                <circle stroke="#222" stroke-width="10" fill="transparent" r="60" cx="75" cy="75"/>
+                <circle id="ph-ring" stroke="#bc13fe" stroke-width="10" fill="transparent" r="60" cx="75" cy="75"
+                        stroke-dasharray="377" stroke-dashoffset="200" class="progress-ring-circle"/>
+            </svg>
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
+                <div class="value" id="val-ph" style="font-size: 2.5rem;">6.0</div>
+                <div class="unit">pH</div>
+            </div>
+        </div>
+
+        <div class="label" style="margin-top: 30px;">NUTRIENT EC</div>
+        <div class="value" style="color:var(--neon-purple);"><span id="val-ec">1.2</span><span class="unit">mS</span></div>
+    </div>
+
+    <!-- Bottom Center: Actuators (Now with Embedded SVGs) -->
+    <div class="actuators">
+        <!-- Lights -->
+        <div class="device" id="dev-light" style="color: #f1c40f;">
+            <div class="icon-box">
+                <!-- SVG Lightbulb -->
+                <svg viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6A4.997 4.997 0 0 1 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></svg>
+            </div>
+            <div class="label">GROW LIGHTS</div>
+        </div>
+        <!-- Pump -->
+        <div class="device" id="dev-pump" style="color: var(--neon-blue);">
+            <div class="icon-box">
+                <!-- SVG Water Drop -->
+                <svg viewBox="0 0 24 24"><path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.8 6 9.14 0 3.63-2.65 6.2-6 6.2z"/></svg>
+            </div>
+            <div class="label">IRRIGATION</div>
+        </div>
+        <!-- Fan -->
+        <div class="device" id="dev-fan" style="color: var(--neon-green);">
+            <div class="icon-box">
+                <!-- SVG Fan -->
+                <svg viewBox="0 0 24 24"><path d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zM4 12c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8-8 3.58-8 8zm8.5-6l.8 2.5h2.5l-2.1 1.5.8 2.5-2-1.5-2 1.5.8-2.5-2.1-1.5h2.5z"/></svg>
+            </div>
+            <div class="label">AIR FAN</div>
+        </div>
+        <!-- Doser -->
+        <div class="device" id="dev-dose" style="color: var(--neon-pink);">
+            <div class="icon-box">
+                <!-- SVG Flask -->
+                <svg viewBox="0 0 24 24"><path d="M19.66 18.53l-2.66-9.52V6h2V4H5v2h2v3.01l-2.66 9.52C3.62 20.9 5.37 22 7.03 22h9.94c1.66 0 3.41-1.1 2.69-3.47zM9 6h6v3.02L12 11 9 9.02V6zm-1.12 14l1.9-6.83L12 15l2.22-1.83 1.9 6.83H7.88z"/></svg>
+            </div>
+            <div class="label">pH DOSER</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- WORKFLOW OVERLAY -->
+<div id="workflow-modal">
+    <h2 style="font-family:'Orbitron', sans-serif; color:var(--neon-blue); margin-bottom:40px;">SYSTEM LOGIC FLOW</h2>
+    <div class="workflow-diagram">
+        <div class="wf-step" id="step-read">
+            <div style="font-size:2rem; margin-bottom:10px;">👁️</div>
+            READ SENSORS
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-step" id="step-safe">
+            <div style="font-size:2rem; margin-bottom:10px;">🛡️</div>
+            SAFETY CHECK
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-step" id="step-ai">
+            <div style="font-size:2rem; margin-bottom:10px;">🧠</div>
+            AI ANALYSIS
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-step" id="step-act">
+            <div style="font-size:2rem; margin-bottom:10px;">⚙️</div>
+            CONTROL RELAYS
+        </div>
+    </div>
+    <div style="margin-top: 20px; color: #888;">System loops every 2 seconds</div>
+    <button class="close-btn" onclick="toggleWorkflow()">CLOSE</button>
+</div>
+
+<script>
+    // --- WORKFLOW TOGGLE ---
+    function toggleWorkflow() {
+        const modal = document.getElementById('workflow-modal');
+        const isFlex = modal.style.display === 'flex';
+        modal.style.display = isFlex ? 'none' : 'flex';
+        
+        if (!isFlex) { // Start animation when opening
+            const steps = ['step-read', 'step-safe', 'step-ai', 'step-act'];
+            let i = 0;
+            setInterval(() => {
+                document.querySelectorAll('.wf-step').forEach(el => el.classList.remove('active'));
+                document.getElementById(steps[i]).classList.add('active');
+                i = (i + 1) % steps.length;
+            }, 1000);
+        }
+    }
+
+    // --- CLOCK ---
+    setInterval(() => {
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+    }, 1000);
+
+    // --- CIRCLE GAUGE HELPER ---
+    function setProgress(id, value, max) {
+        const circle = document.getElementById(id);
+        const radius = circle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        const offset = circumference - (value / max) * circumference;
+        circle.style.strokeDashoffset = offset;
+    }
+
+    // --- DATA UPDATE LOGIC ---
+    async function updateDashboard() {
+        try {
+            // Try to fetch real data
+            const response = await fetch('dashboard.json');
+            const data = await response.json();
+            updateUI(data);
+        } catch (e) {
+            // If fetch fails (or just opening file), run Simulation Mode
+            console.log("Running Simulation Mode");
+            const simData = simulateData();
+            updateUI(simData);
+        }
+    }
+
+    function simulateData() {
+        // Generate random realistic values
+        return {
+            temp: (24 + Math.random() * 2).toFixed(1),
+            hum: (55 + Math.random() * 5).toFixed(0),
+            ph: (5.8 + Math.random() * 0.4).toFixed(2),
+            ec: 1.2,
+            safety: "SAFE",
+            light_state: "ON",
+            fan_state: Math.random() > 0.5 ? "ON" : "OFF",
+            pump_state: Math.random() > 0.8 ? "ON" : "OFF" // Pump mostly off
+        };
+    }
+
+    function updateUI(data) {
+        // Values
+        document.getElementById('val-temp').innerText = data.temp;
+        document.getElementById('val-hum').innerText = data.hum;
+        document.getElementById('val-ph').innerText = data.ph;
+        document.getElementById('val-ec').innerText = data.ec;
+
+        // Gauges
+        setProgress('temp-ring', data.temp, 50); // Max temp 50
+        setProgress('ph-ring', data.ph, 14);     // Max pH 14
+
+        // Actuators
+        setDeviceState('dev-light', data.light_state === "ON");
+        setDeviceState('dev-fan', data.fan_state === "ON", 'spin-anim');
+        setDeviceState('dev-pump', data.pump_state === "ON", 'pulse-anim');
+        
+        // Safety
+        const sys = document.getElementById('sys-status');
+        if (data.safety === "SAFE") {
+            sys.innerText = "NORMAL";
+            sys.style.color = "var(--neon-green)";
+        } else {
+            sys.innerText = "ALERT";
+            sys.style.color = "var(--alert-red)";
+        }
+    }
+
+    function setDeviceState(id, isOn, animClass) {
+        const el = document.getElementById(id);
+        const icon = el.querySelector('.icon-box');
+        
+        if (isOn) {
+            el.classList.add('on');
+            if (animClass) icon.classList.add(animClass);
+        } else {
+            el.classList.remove('on');
+            if (animClass) icon.classList.remove(animClass);
+        }
+    }
+
+    setInterval(updateDashboard, 1000);
+
+</script>
+</body>
+</html>
