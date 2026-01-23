@@ -36,20 +36,19 @@ This project is a fully automated control system for a vertical farm. It manages
 - Python 3.11+
 - I2C Interface Enabled (sudo raspi-config -> Interface Options -> I2C)
 
-### 1. Set Up Virtual Environment
+## 1. Set Up Virtual Environment
 Run these commands on your Raspberry Pi terminal:
 
 ```bash
-# Create project folder
+### Create project folder
 mkdir vertical_farm
 cd vertical_farm
 
-# Create virtual environment (with access to system GPIO libs)
+### Create virtual environment (with access to system GPIO libs)
 python3 -m venv venv --system-site-packages
 
-# Activate it
+### Activate it
 source venv/bin/activate
-
 
 ## 2. Install Dependencies
 
