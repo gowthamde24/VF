@@ -1,13 +1,12 @@
-# GPIO Pin Mapping (BCM Mode)
 RELAYS = {
     'water_pump': 5,    # Relay 1 (GPIO 5)
     'light': 6,         # Relay 2 (GPIO 6)
-    'fan_1': 13,          # Relay 3 (GPIO 13)
+    'fan_1': 13,        # Relay 3 (GPIO 13)
     'ph_down': 19,      # Relay 4 (GPIO 19)
     'ph_up': 26,        # Relay 5 (GPIO 26)
-    # 'nutrient_a': 16,   # Relay 6 (GPIO 16)
-    # 'nutrient_b': 20,   # Relay 7 (GPIO 20)
-    'fan_2': 21         # Relay 8 (GPIO 21)
+    'nutrient_a': 16,   # Relay 6 (GPIO 16) - New Nutrient Pump A
+    'nutrient_b': 20,   # Relay 7 (GPIO 20) - New Nutrient Pump B
+    'fan_2': 21         # Relay 8 (GPIO 21) - Second Fan
 }
 
 # I2C Addresses
@@ -27,19 +26,20 @@ LIGHT_START_HOUR = 6    # 6 AM
 LIGHT_END_HOUR = 20     # 8 PM
 
 # Timers
-WATER_DURATION = 300    # 5 Minutes ON
-WATER_INTERVAL = 3600   # 1 Hour OFF
+WATER_DURATION = 900    # 15 Minutes ON
+WATER_INTERVAL = 2700   # 45 Minutes OFF
 DOSE_DURATION = 1.5     # 1.5 Seconds dosing
 DOSE_WAIT_TIME = 900    # 15 Minutes wait
 
 # Chemistry
-# Chemistry & Calibration
 TARGET_PH = 6.0
 PH_TOLERANCE = 0.5
-
-# pH Calibration Values (From your recent calibration)
-PH_SLOPE = -3.5000      # Replace with your actual slope
-PH_INTERCEPT = 15.7500  # Replace with your actual intercept
+TARGET_EC = 1.2         # Target EC (mS/cm)
+EC_TOLERANCE = 0.2
 
 # Safety
 MIN_WATER_VOLTAGE = 1.5 # Tank Empty Limit
+
+# pH Calibration Values (Default placeholders - update after calibration)
+PH_SLOPE = -5.7706
+PH_INTERCEPT = 15.8918
