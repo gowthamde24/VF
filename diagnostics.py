@@ -14,11 +14,19 @@ except (ImportError, RuntimeError, NotImplementedError):
     # Mock GPIO Class
     class GPIO:
         BCM = "BCM"; OUT = "OUT"; HIGH = 1; LOW = 0
-        def setmode(mode): pass
-        def setup(pin, mode): pass
-        def output(pin, state): print(f"  [MOCK] GPIO {pin} -> {'HIGH' if state else 'LOW'}")
-        def input(pin): return 0
-        def cleanup(): pass
+        _pins = {}
+        @classmethod
+        def setmode(cls, mode): pass
+        @classmethod
+        def setup(cls, pin, mode): cls._pins[pin] = cls.HIGH
+        @classmethod
+        def output(cls, pin, state): 
+            cls._pins[pin] = state
+            print(f"  [MOCK] GPIO {pin} -> {'HIGH (OFF)' if state else 'LOW (ON)'}")
+        @classmethod
+        def input(cls, pin): return cls._pins.get(pin, cls.HIGH)
+        @classmethod
+        def cleanup(cls): pass
     
     # Mock Board/Busio
     class board: SCL = 1; SDA = 2
@@ -46,35 +54,51 @@ except:
     pass
 
 # Setup Relays from Config
+# Note: We do NOT reset them to HIGH here to preserve state if script restarts,
+# but for initial run, we ensure they are known.
 for name, pin in config.RELAYS.items():
     GPIO.setup(pin, GPIO.OUT)
-    GPIO.output(pin, GPIO.HIGH) # Start OFF
+    # We don't force them OFF here to allow inspecting current state,
+    # but initially they might be floating. 
+    # Usually safer to start OFF in a diagnostic tool unless we read state.
+    if GPIO.input(pin) not in [GPIO.LOW, GPIO.HIGH]:
+        GPIO.output(pin, GPIO.HIGH) 
 
 # --- TEST FUNCTIONS ---
 
 def test_single_relay():
     while True:
-        print("\n--- Relay Control Menu ---")
+        print("\n--- Manual Relay Control (Toggle Mode) ---")
         # Create a numbered list from config
-        relay_list = list(config.RELAYS.items()) # [('water_pump', 5), ('light', 6)...]
+        relay_list = list(config.RELAYS.items()) 
         
+        # Display Status
+        print(f"{'#':<3} {'DEVICE NAME':<20} {'GPIO':<6} {'STATUS'}")
+        print("-" * 40)
         for i, (name, pin) in enumerate(relay_list):
-            state = "ON" if GPIO.input(pin) == GPIO.LOW else "OFF"
-            print(f" {i+1}. {name.upper()} (GPIO {pin}) - [{state}]")
-        print(" 9. Back")
+            # Read current state (Active LOW logic: 0=ON, 1=OFF)
+            is_on = GPIO.input(pin) == GPIO.LOW 
+            status = " [ON] ✅" if is_on else " [OFF] ❌"
+            print(f"{i+1:<3} {name.upper():<20} {pin:<6} {status}")
+        print("-" * 40)
+        print(" Enter number to toggle state (1-8)")
+        print(" 9. Back to Main Menu")
         
-        choice = input("Select Relay # to toggle: ")
+        choice = input("\nSelect > ")
         if choice == '9': break
         
         try:
             idx = int(choice) - 1
             if 0 <= idx < len(relay_list):
                 name, pin = relay_list[idx]
-                print(f"\n--> Toggling {name}...")
-                GPIO.output(pin, GPIO.LOW)  # ON
-                time.sleep(1)
-                GPIO.output(pin, GPIO.HIGH) # OFF
-                print("--> Done.")
+                
+                # Toggle Logic
+                if GPIO.input(pin) == GPIO.LOW: # It's ON
+                    print(f"--> Turning OFF {name}...")
+                    GPIO.output(pin, GPIO.HIGH)
+                else: # It's OFF
+                    print(f"--> Turning ON {name}...")
+                    GPIO.output(pin, GPIO.LOW)
             else:
                 print("Invalid number.")
         except ValueError:
@@ -82,6 +106,7 @@ def test_single_relay():
 
 def test_all_relays():
     print("\n--- Cycling ALL Relays (Sequence) ---")
+    print("This will turn each relay ON for 0.5s then OFF.")
     for name, pin in config.RELAYS.items():
         print(f"Testing {name} (GPIO {pin})...")
         GPIO.output(pin, GPIO.LOW)  # ON
@@ -97,49 +122,57 @@ def read_bme280():
             bme = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=config.I2C_ADDR_BME280)
             print(f"Temperature: {bme.temperature:.1f} °C")
             print(f"Humidity:    {bme.relative_humidity:.1f} %")
+            print(f"Pressure:    {bme.pressure:.1f} hPa")
         except Exception as e:
             print(f"Error: {e}")
     else:
         print("[SIMULATION] Temp: 25.5°C | Hum: 60%")
+    input("Press Enter to continue...")
 
 def read_ph():
-    print("\n--- pH Sensor (ADS1115) ---")
+    print("\n--- pH Sensor Reading (Continuous) ---")
+    print("Press CTRL+C to stop reading.\n")
     if i2c and ADS:
         try:
             ads = ADS.ADS1115(i2c, address=config.I2C_ADDR_ADS1115)
             chan = AnalogIn(ads, config.CHAN_PH)
-            v = chan.voltage
             
-            # Use cal values if available
             slope = getattr(config, 'PH_SLOPE', -3.5)
             intercept = getattr(config, 'PH_INTERCEPT', 15.75)
-            ph = slope * v + intercept
             
-            print(f"Raw Voltage: {v:.4f} V")
-            print(f"Calculated:  {ph:.2f} pH")
+            while True:
+                v = chan.voltage
+                ph = slope * v + intercept
+                print(f"Raw: {v:.4f} V  =>  pH: {ph:.2f}   ", end='\r')
+                time.sleep(0.5)
+        except KeyboardInterrupt:
+            print("\nStopped.")
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"\nError: {e}")
     else:
         print("[SIMULATION] Voltage: 2.500V | pH: 7.00")
+        input("Press Enter...")
 
 def read_ec():
-    print("\n--- EC Sensor (ADS1115) ---")
+    print("\n--- EC Sensor Reading (Continuous) ---")
+    print("Press CTRL+C to stop reading.\n")
     if i2c and ADS:
         try:
             ads = ADS.ADS1115(i2c, address=config.I2C_ADDR_ADS1115)
             chan = AnalogIn(ads, config.CHAN_EC)
-            v = chan.voltage
             
-            # Simple conversion for testing (Calibration needed for precision)
-            # Assuming 1V ~ 1.0 mS/cm as a rough baseline
-            ec = v * 1.0 
-            
-            print(f"Raw Voltage: {v:.4f} V")
-            print(f"Estimated:   {ec:.2f} mS/cm")
+            while True:
+                v = chan.voltage
+                ec = v * 1.0 # Basic estimation
+                print(f"Raw: {v:.4f} V  =>  EC: {ec:.2f} mS/cm   ", end='\r')
+                time.sleep(0.5)
+        except KeyboardInterrupt:
+            print("\nStopped.")
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"\nError: {e}")
     else:
         print("[SIMULATION] Voltage: 1.200V | EC: 1.20 mS/cm")
+        input("Press Enter...")
 
 # --- MAIN LOOP ---
 def main_menu():
@@ -147,8 +180,8 @@ def main_menu():
         print("\n==============================")
         print("   VERTICAL FARM DIAGNOSTICS   ")
         print("==============================")
-        print("1. Manual Relay Control")
-        print("2. Test All Relays (Auto)")
+        print("1. Manual Relay Control (Toggle ON/OFF)")
+        print("2. Test All Relays (Sequence)")
         print("3. Read Temperature/Humidity")
         print("4. Read pH Sensor")
         print("5. Read EC Sensor")
@@ -162,6 +195,9 @@ def main_menu():
         elif choice == '4': read_ph()
         elif choice == '5': read_ec()
         elif choice == '6':
+            print("Turning off all relays before exit...")
+            for pin in config.RELAYS.values():
+                GPIO.output(pin, GPIO.HIGH) # OFF
             GPIO.cleanup()
             print("Bye!")
             break
