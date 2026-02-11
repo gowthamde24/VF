@@ -4,117 +4,80 @@ import threading
 import http.server
 import socketserver
 import os
+import sys
 from datetime import datetime
-import config  # Import settings from config.py
+import config  # Import your settings
 
-# --- HARDWARE ABSTRACTION LAYER (HAL) ---
+# --- Pi 5 STABILITY PATCH ---
+def reset_i2c_bus():
+    print("-> EMI Detected: Resetting I2C Bus Driver...")
+    os.system("sudo modprobe -r i2c_bcm2835 && sudo modprobe i2c_bcm2835")
+    time.sleep(1.5)
 
-# 1. GPIO Setup
 try:
     import RPi.GPIO as GPIO
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
+    import board
+    import busio
+    from adafruit_bme280 import basic as adafruit_bme280
+    import adafruit_ads1x15.ads1115 as ADS
+    from adafruit_ads1x15.analog_in import AnalogIn
 except ImportError:
-    class GPIO:
-        BCM="BCM"; OUT="OUT"; HIGH=1; LOW=0
-        def setmode(m): pass
-        def setup(p, m, initial=1): pass
-        def output(p, s): pass
-        def cleanup(): pass
+    print("! Missing libraries. Run: pip install adafruit-circuitpython-bme280 adafruit-circuitpython-ads1x15")
 
-# 2. Resilient Pi 5 I2C Init
+# --- GLOBAL HARDWARE OBJECTS ---
 i2c = None
 bme280 = None
 ads = None
 ph_chan = None
-ec_chan = None
-level_chan = None
 
 def init_hardware():
-    global i2c, bme280, ads, ph_chan, ec_chan, level_chan
+    global i2c, bme280, ads, ph_chan
     
-    print("\n--- Initializing Hardware (Pi 5 Optimized) ---")
-    
-    try:
-        import board
-        import busio
-        # Give the OS a moment to settle
-        time.sleep(1)
-        i2c = busio.I2C(board.SCL, board.SDA)
-        print("-> I2C Bus opened.")
-    except Exception as e:
-        print(f"!! Fatal I2C Bus Error: {e}")
-        return
+    print("\n" + "="*50)
+    print("  VERTICAL FARM SYSTEM - Pi 5 RESILIENT BOOT")
+    print("  Target BME280 Addr: " + hex(config.I2C_ADDR_BME280))
+    print("="*50)
 
-    # Attempt BME280 (Address 0x76)
-    try:
-        from adafruit_bme280 import basic as adafruit_bme280
-        # Multiple retries for Pi 5 timing issues
-        for i in range(3):
-            try:
-                bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=config.I2C_ADDR_BME280)
-                print(f"-> BME280 ready at {hex(config.I2C_ADDR_BME280)}")
-                break
-            except:
-                time.sleep(0.5)
-        if not bme280: print("! BME280 not responding.")
-    except Exception as e:
-        print(f"! BME280 Library error: {e}")
-
-    # Attempt ADS1115 (Address 0x48)
-    try:
-        import adafruit_ads1x15.ads1115 as ADS
-        from adafruit_ads1x15.analog_in import AnalogIn
-        for i in range(3):
-            try:
-                ads = ADS.ADS1115(i2c, address=config.I2C_ADDR_ADS1115)
-                ph_chan = AnalogIn(ads, config.CHAN_PH)
-                ec_chan = AnalogIn(ads, config.CHAN_EC)
-                level_chan = AnalogIn(ads, config.CHAN_LEVEL)
-                print(f"-> ADS1115 ready at {hex(config.I2C_ADDR_ADS1115)}")
-                break
-            except:
-                time.sleep(0.5)
-        if not ads: print("! ADS1115 not responding.")
-    except Exception as e:
-        print(f"! ADS1115 Library error: {e}")
-
-# --- SETUP RELAYS ---
-def init_relays():
+    # 1. GPIO Reset
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
     for name, pin in config.RELAYS.items():
-        # Using 'initial' parameter to prevent 'flicker' on start
-        GPIO.setup(pin, GPIO.OUT, initial=GPIO.HIGH)
-    print("-> All Relays initialized to OFF.")
+        GPIO.setup(pin, GPIO.OUT, initial=GPIO.HIGH) 
+    print("-> Relays: Initialized to OFF (Active Low)")
 
-# --- DASHBOARD UPDATE ---
-def update_dashboard(t, h, ph, ec, l_s, f_s, p_s, s_s):
-    data = {
-        "timestamp": datetime.now().strftime('%H:%M:%S'),
-        "temp": t, "hum": h, "ph": ph, "ec": ec,
-        "light_state": l_s, "fan_state": f_s, "pump_state": p_s, "safety": s_s
-    }
-    try:
-        with open("dashboard.json", "w") as f:
-            json.dump(data, f)
-    except: pass
+    # 2. I2C Init with Aggressive Retries
+    for attempt in range(5):
+        try:
+            i2c = busio.I2C(board.SCL, board.SDA)
+            
+            # Test BME280 at the configured address (now 0x77)
+            bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=config.I2C_ADDR_BME280)
+            
+            # Test ADS1115
+            ads = ADS.ADS1115(i2c, address=config.I2C_ADDR_ADS1115)
+            ph_chan = AnalogIn(ads, config.CHAN_PH)
+            
+            print(f"-> Hardware: Success! Found BME at {hex(config.I2C_ADDR_BME280)} and ADS at {hex(config.I2C_ADDR_ADS1115)}")
+            return True
+        except Exception as e:
+            print(f"-> Attempt {attempt+1} at {hex(config.I2C_ADDR_BME280)} failed ({e}).")
+            reset_i2c_bus()
+    
+    print(f"!! CRITICAL: Hardware handshake failed. Check if BME is actually at 0x76 or 0x77.")
+    return False
 
-# --- MAIN LOOP ---
-def run_loop():
-    print("\nAutomation Loop Active. Monitoring sensors...")
+# --- MAIN AUTOMATION LOOP ---
+def main_loop():
+    print("\n--- Automation Active ---")
     while True:
         try:
-            # 1. Read Sensors (with Pi 5 Errno 11 protection)
+            # READ SENSORS
             t = round(bme280.temperature, 1) if bme280 else 25.0
             h = round(bme280.relative_humidity, 0) if bme280 else 50.0
             
-            ph_val = 6.0
-            if ph_chan:
-                v = ph_chan.voltage
-                ph_val = round((config.PH_SLOPE * v) + config.PH_INTERCEPT, 2)
+            ph_v = ph_chan.voltage if ph_chan else 2.5
+            ph_val = round((config.PH_SLOPE * ph_v) + config.PH_INTERCEPT, 2)
             
-            ec_val = round(ec_chan.voltage * 1.0, 2) if ec_chan else 0.0
-
-            # 2. Logic (Example: Fans based on Temp)
             fan_state = "OFF"
             if t > config.TARGET_TEMP:
                 GPIO.output(config.RELAYS['fan_1'], GPIO.LOW)
@@ -124,34 +87,36 @@ def run_loop():
                 GPIO.output(config.RELAYS['fan_1'], GPIO.HIGH)
                 GPIO.output(config.RELAYS['fan_2'], GPIO.HIGH)
 
-            # 3. Update Status
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Temp: {t}C | pH: {ph_val} | EC: {ec_val}", end='\r')
-            update_dashboard(t, h, ph_val, ec_val, "OFF", fan_state, "OFF", "SAFE")
+            ts = datetime.now().strftime('%H:%M:%S')
+            print(f"[{ts}] T:{t}C | pH:{ph_val} | Fan:{fan_state}    ", end='\r')
+            
+            status_data = {
+                "temp": t, "hum": h, "ph": ph_val, 
+                "fan": fan_state, "time": ts, "status": "RUNNING"
+            }
+            with open("dashboard.json", "w") as f:
+                json.dump(status_data, f)
             
             time.sleep(2)
-            
+
         except OSError as e:
-            if e.errno == 11: # Resource temporarily unavailable
-                time.sleep(1) # Just wait and retry
-            else:
-                print(f"\n! Loop Error: {e}")
+            if e.errno == 11: 
+                time.sleep(0.1)
+                continue 
+            print(f"\n! Bus Communication Error: {e}")
+            time.sleep(2)
+        except Exception as e:
+            print(f"\n! Unexpected Error: {e}")
+            time.sleep(2)
         except KeyboardInterrupt:
             break
 
-# --- START SERVER ---
-def start_server():
-    with socketserver.TCPServer(("", 8000), http.server.SimpleHTTPRequestHandler) as httpd:
-        httpd.serve_forever()
-
 if __name__ == "__main__":
-    init_relays()
-    init_hardware()
+    if init_hardware():
+        threading.Thread(target=lambda: socketserver.TCPServer(("", 8000), http.server.SimpleHTTPRequestHandler).serve_forever(), daemon=True).start()
+        main_loop()
     
-    # Start web server
-    threading.Thread(target=start_server, daemon=True).start()
-    
-    try:
-        run_loop()
-    finally:
-        GPIO.cleanup()
-        print("\nShutdown complete.")
+    for pin in config.RELAYS.values():
+        GPIO.output(pin, GPIO.HIGH)
+    GPIO.cleanup()
+    print("System Standby.")
