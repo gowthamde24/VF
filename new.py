@@ -35,7 +35,6 @@ def init_hardware():
     
     print("\n" + "="*50)
     print("  VERTICAL FARM SYSTEM - Pi 5 RESILIENT BOOT")
-    print("  Target BME280 Addr: " + hex(config.I2C_ADDR_BME280))
     print("="*50)
 
     # 1. GPIO Reset
@@ -45,25 +44,39 @@ def init_hardware():
         GPIO.setup(pin, GPIO.OUT, initial=GPIO.HIGH) 
     print("-> Relays: Initialized to OFF (Active Low)")
 
-    # 2. I2C Init with Aggressive Retries
+    # 2. I2C Init with Auto-Detection and Aggressive Retries
     for attempt in range(5):
         try:
             i2c = busio.I2C(board.SCL, board.SDA)
             
-            # Test BME280 at the configured address (now 0x77)
-            bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=config.I2C_ADDR_BME280)
+            # --- AUTO-DETECT BME280 ADDRESS ---
+            # Most BME280 modules are at 0x76 or 0x77. We probe both.
+            possible_addrs = [0x76, 0x77]
+            detected_bme_addr = None
             
+            for addr in possible_addrs:
+                try:
+                    # Attempt a quick handshake with the address
+                    bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=addr)
+                    detected_bme_addr = addr
+                    break # Success!
+                except:
+                    continue # Try next address
+            
+            if not detected_bme_addr:
+                raise Exception("BME280 not found at 0x76 or 0x77")
+
             # Test ADS1115
             ads = ADS.ADS1115(i2c, address=config.I2C_ADDR_ADS1115)
             ph_chan = AnalogIn(ads, config.CHAN_PH)
             
-            print(f"-> Hardware: Success! Found BME at {hex(config.I2C_ADDR_BME280)} and ADS at {hex(config.I2C_ADDR_ADS1115)}")
+            print(f"-> Hardware: Success! Found BME at {hex(detected_bme_addr)} and ADS at {hex(config.I2C_ADDR_ADS1115)}")
             return True
         except Exception as e:
-            print(f"-> Attempt {attempt+1} at {hex(config.I2C_ADDR_BME280)} failed ({e}).")
+            print(f"-> Attempt {attempt+1} failed ({e}).")
             reset_i2c_bus()
     
-    print(f"!! CRITICAL: Hardware handshake failed. Check if BME is actually at 0x76 or 0x77.")
+    print(f"!! CRITICAL: Hardware handshake failed. Check your wiring and GND connections.")
     return False
 
 # --- MAIN AUTOMATION LOOP ---
