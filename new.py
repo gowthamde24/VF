@@ -1,26 +1,21 @@
-import smbus2
+import adafruit_ads1x15.ads1115 as ADS
+from adafruit_ads1x15.analog_in import AnalogIn
+import adafruit_bme280.advanced as adafruit_bme280
 
-def get_full_i2c_report(bus_number=1):
-    bus = smbus2.SMBus(bus_number)
-    report = {}
+i2c = busio.I2C(board.SCL, board.SDA)
 
-    for address in range(128):
-        # Formatting key as '0xNN'
-        key = f"0x{address:02x}"
-        
-        try:
-            # Quick write/read to check for existence
-            data = bus.read_byte(address)
-            report[key] = f"{data} (0x{data:02x})"
-        except OSError:
-            report[key] = "No connection"
-            
-    bus.close()
-    return report
+try:
 
-# Generate the data
-i2c_data = get_full_i2c_report()
+# BME280 init (Address 0x76)
+    bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=0x76)
+    print(f"BME280 found! Temp: {bme280.temperature:.2f} °C")
+except Exception as e:
+    print(f"BME280 ERROR: {e}")
 
-# Print every single address in key : value format
-for addr, status in i2c_data.items():
-    print(f"{addr} : {status}") 
+# ADS1115 init (Address 0x48)
+try:
+    ads = ADS.ADS1115(i2c, address=0x48)
+    chan = AnalogIn(ads, ADS.P0) # Liest Pin A0 gegen GND
+    print(f"ADS1115 Found! Voltage A0: {chan.voltage:.3f} V")
+except Exception as e:
+    print(f"ADS1115 ERROR: {e}") 
