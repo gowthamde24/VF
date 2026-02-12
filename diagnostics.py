@@ -213,14 +213,12 @@ import sys
 import time
 import subprocess
 
-# --- PI 5 HARDWARE RECOVERY ---
-def reset_i2c_bus():
-    """Forces the Pi 5 to release the I2C bus locks."""
+# --- PI 5 RECOVERY ---
+def reset_i2c():
     subprocess.run(["sudo", "modprobe", "-r", "i2c_bcm2835"], capture_output=True)
     subprocess.run(["sudo", "modprobe", "i2c_bcm2835"], capture_output=True)
     time.sleep(1)
 
-# Global Hardware Imports
 try:
     import RPi.GPIO as GPIO
     import board
@@ -229,7 +227,7 @@ try:
     import adafruit_ads1x15.ads1115 as ADS
     from adafruit_ads1x15.analog_in import AnalogIn
 except ImportError:
-    print("!! Missing libraries. Run: ./venv/bin/pip install adafruit-circuitpython-bme280 adafruit-circuitpython-ads1x15 adafruit-blinka")
+    print("!! Missing libraries. Run pip install commands.")
     sys.exit(1)
 
 # --- PIN MAPPING (FROM YOUR CONFIG.PY) ---
@@ -248,36 +246,33 @@ def setup_gpio():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
     for key in RELAYS:
+        # HIGH is OFF for active-low relay boards
         GPIO.setup(RELAYS[key]["pin"], GPIO.OUT, initial=GPIO.HIGH)
 
-def get_sensor_data(i2c):
-    results = {"temp": "N/A", "hum": "N/A", "voltages": ["N/A"]*3}
-    
-    # 1. BME280
-    try:
-        bme = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=0x76)
-        results["temp"] = f"{bme.temperature:.1f}C"
-        results["hum"] = f"{bme.relative_humidity:.1f}%"
-    except: pass
-
-    # 2. ADS1115
-    try:
-        ads = ADS.ADS1115(i2c, address=0x48)
-        # Using integers 0, 1, 2 to avoid AttributeError 'P0'
-        for i in range(3):
-            chan = AnalogIn(ads, i)
-            results["voltages"][i] = f"{chan.voltage:.3f}V"
-    except: pass
-    
-    return results
-
-def draw_ui(sensors):
+def draw_ui(i2c):
     os.system('clear')
     print("==================================================")
     print("      VERTICAL FARM - MASTER DIAGNOSTIC (PI 5)    ")
     print("==================================================")
-    print(f" CLIMATE | Temp: {sensors['temp']} | Hum: {sensors['hum']}")
-    print(f" ANALOG  | A0 (pH): {sensors['voltages'][0]} | A1 (EC): {sensors['voltages'][1]} | A2 (Lvl): {sensors['voltages'][2]}")
+    
+    # Read Sensors
+    temp, hum = "N/A", "N/A"
+    v0, v1, v2 = "N/A", "N/A", "N/A"
+    
+    try:
+        bme = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=0x76)
+        temp, hum = f"{bme.temperature:.1f}C", f"{bme.relative_humidity:.1f}%"
+    except: pass
+
+    try:
+        ads = ADS.ADS1115(i2c, address=0x48)
+        v0 = f"{AnalogIn(ads, 0).voltage:.3f}V"
+        v1 = f"{AnalogIn(ads, 1).voltage:.3f}V"
+        v2 = f"{AnalogIn(ads, 2).voltage:.3f}V"
+    except: pass
+
+    print(f" CLIMATE | Temp: {temp} | Hum: {hum}")
+    print(f" ANALOG  | A0 (pH): {v0} | A1 (EC): {v1} | A2 (Lvl): {v2}")
     print("--------------------------------------------------")
     print(" ID | Device       | GPIO | Status")
     print("----|--------------|------|-----------------------")
@@ -286,47 +281,39 @@ def draw_ui(sensors):
         status = "[  ON  ]" if data["state"] == "ON" else "[  OFF ]"
         print(f" {key: <2} | {data['name']: <12} | {data['pin']: <4} | {status}")
     print("--------------------------------------------------")
-    print(" [1-8] Toggle Device | [A] All ON | [O] All OFF")
-    print(" [R] Refresh Sensors | [Q] Quit")
+    print(" [1-8] Toggle | [A] All ON | [O] All OFF | [Q] Quit")
     print("==================================================")
 
-def toggle(key, force_state=None):
+def toggle(key, force=None):
     pin = RELAYS[key]["pin"]
-    if force_state is not None:
-        new_on = force_state
-    else:
-        new_on = RELAYS[key]["state"] == "OFF"
+    is_on = RELAYS[key]["state"] == "ON"
+    new_state = force if force is not None else not is_on
     
-    GPIO.output(pin, GPIO.LOW if new_on else GPIO.HIGH)
-    RELAYS[key]["state"] = "ON" if new_on else "OFF"
+    GPIO.output(pin, GPIO.LOW if new_state else GPIO.HIGH)
+    RELAYS[key]["state"] = "ON" if new_state else "OFF"
 
 if __name__ == "__main__":
     if os.getuid() != 0:
-        print("!! Run as: sudo ./venv/bin/python3 diagnostics.py")
+        print("!! Run with sudo")
         sys.exit(1)
 
     setup_gpio()
-    i2c_bus = None
     try:
-        i2c_bus = busio.I2C(board.SCL, board.SDA)
+        i2c = busio.I2C(board.SCL, board.SDA)
     except:
-        reset_i2c_bus()
-        i2c_bus = busio.I2C(board.SCL, board.SDA)
+        reset_i2c()
+        i2c = busio.I2C(board.SCL, board.SDA)
 
     try:
         while True:
-            sensors = get_sensor_data(i2c_bus)
-            draw_ui(sensors)
+            draw_ui(i2c)
             cmd = input("Command: ").upper()
-            
             if cmd in RELAYS:
                 toggle(cmd)
             elif cmd == "A":
                 for k in RELAYS: toggle(k, True)
             elif cmd == "O":
                 for k in RELAYS: toggle(k, False)
-            elif cmd == "R":
-                continue
             elif cmd == "Q":
                 break
     finally:

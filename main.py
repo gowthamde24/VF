@@ -611,15 +611,13 @@ import threading
 import http.server
 import socketserver
 from datetime import datetime
-import numpy as np
 
-# --- PI 5 STABILITY PATCH ---
+# --- PI 5 SYSTEM STABILITY ---
 def reset_i2c():
-    """Forces the Pi 5 to release I2C bus locks."""
+    """Forces the Pi 5 to release the I2C bus locks."""
     os.system("sudo modprobe -r i2c_bcm2835 && sudo modprobe i2c_bcm2835")
     time.sleep(1)
 
-# --- IMPORTS ---
 try:
     import RPi.GPIO as GPIO
     import board
@@ -627,160 +625,145 @@ try:
     from adafruit_bme280 import basic as adafruit_bme280
     import adafruit_ads1x15.ads1115 as ADS
     from adafruit_ads1x15.analog_in import AnalogIn
-    
-    # Machine Learning Engine Integration
-    from ml_engine import AnomalyDetector
 except ImportError as e:
-    print(f"!! Library Error: {e}. Ensure you ran the pip install commands.")
+    print(f"!! Library Error: {e}")
     sys.exit(1)
 
-# --- PIN CONFIG (FROM YOUR PHOTO) ---
+# --- PIN MAPPING (FROM YOUR CONFIG.PY) ---
 RELAYS = {
-    'water_pump': 5, 'light': 6, 'fan_1': 13,
-    'ph_down': 19, 'ph_up': 26, 'nutrient_a': 16,
-    'nutrient_b': 20, 'fan_2': 21
+    'water_pump': 5,
+    'light': 6,
+    'fan_1': 13,
+    'fan_2': 21,
+    'ph_down': 19,
+    'ph_up': 26,
+    'nutrient_a': 16,
+    'nutrient_b': 20
 }
 
 # --- THRESHOLDS ---
 TARGET_TEMP = 25.0
-TARGET_PH = 6.0
-PH_TOLERANCE = 0.5
 
-# --- ML & DATA STORAGE ---
-training_data = [] # Buffer for ML training
-ML_TRAIN_THRESHOLD = 50 # Start AI after 50 samples
-
-# Shared State for Dashboard
-farm = {
-    "timestamp": "", 
-    "temp": 0.0, 
-    "hum": 0.0, 
-    "ph": 7.0, 
-    "light_state": "OFF", 
-    "fan_state": "OFF", 
+# --- DASHBOARD STATE (Matches stunning_dashboard.html) ---
+farm_data = {
+    "timestamp": "",
+    "temp": 0.0,
+    "hum": 0.0,
+    "ph": 7.0,
+    "ec": 0.0,
+    "light_state": "OFF",
+    "fan_state": "OFF",
     "pump_state": "OFF",
-    "safety": "BOOTING",
-    "ai_status": "COLLECTING DATA",
-    "anomaly_flag": "NORMAL"
+    "safety": "BOOTING"
 }
 
-def init_hw():
-    """Initializes GPIO and I2C Bus."""
+def init_hardware():
+    print("--- Initializing Vertical Farm OS ---")
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
+    
+    # Initialize all 8 relays to OFF (HIGH)
     for pin in RELAYS.values():
         GPIO.setup(pin, GPIO.OUT, initial=GPIO.HIGH)
     
     try:
         i2c = busio.I2C(board.SCL, board.SDA)
+        print("[OK] I2C Bus Opened.")
         return i2c
-    except Exception:
+    except Exception as e:
+        print(f"[WARN] I2C Init Failed: {e}. Attempting reset...")
         reset_i2c()
-        return busio.I2C(board.SCL, board.SDA)
+        return None
 
-def run_automation():
-    global training_data
-    i2c = init_hw()
+def main_loop():
+    i2c = init_hardware()
     bme = None
     ads = None
-    
-    # Initialize ML Engine
-    detector = AnomalyDetector()
 
-    # Link Sensors
-    try: 
-        bme = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=0x76)
-        print("[OK] BME280 Connected.")
-    except: print("!! BME280 Missing")
-    
-    try: 
-        ads = ADS.ADS1115(i2c, address=0x48)
-        print("[OK] ADS1115 Connected.")
-    except: print("!! ADS1115 Missing")
+    if i2c:
+        try:
+            bme = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=0x76)
+            print("[OK] BME280 Climate Sensor Online.")
+        except: print("[!!] BME280 Missing.")
+        
+        try:
+            ads = ADS.ADS1115(i2c, address=0x48)
+            print("[OK] ADS1115 Chemistry ADC Online.")
+        except: print("[!!] ADS1115 Missing.")
 
-    print("\n--- Automation & AI Monitoring Active ---")
+    print("\n--- Automation Loop Starting (Port 8000) ---")
+    
     while True:
         try:
-            # 1. READ SENSORS
-            current_temp = 0.0
-            current_hum = 0.0
-            current_ph = 7.0
-
+            # 1. SENSOR READINGS
             if bme:
-                current_temp = round(bme.temperature, 1)
-                current_hum = round(bme.relative_humidity, 0)
-                farm["temp"] = current_temp
-                farm["hum"] = current_hum
+                farm_data["temp"] = round(bme.temperature, 1)
+                farm_data["hum"] = round(bme.relative_humidity, 0)
             
             if ads:
-                # Using 0 for channel A0 to avoid P0 attribute error
+                # pH on Channel 0
                 ph_v = AnalogIn(ads, 0).voltage
-                current_ph = round(((-3.8) * ph_v) + 15.5, 2)
-                farm["ph"] = current_ph
+                farm_data["ph"] = round(((-3.8) * ph_v) + 15.5, 2)
+                # EC or Level on Channel 1
+                farm_data["ec"] = round(AnalogIn(ads, 1).voltage, 2)
 
-            # 2. MACHINE LEARNING LOGIC
-            # Append to training buffer
-            training_data.append([current_temp, current_hum, current_ph])
-            
-            # Check if we need to train the model
-            if not detector.trained and len(training_data) >= ML_TRAIN_THRESHOLD:
-                detector.train(training_data)
-                farm["ai_status"] = "MODEL TRAINED"
-            
-            # Perform Prediction if trained
-            if detector.trained:
-                prediction = detector.predict([current_temp, current_hum, current_ph])
-                if prediction == -1:
-                    farm["anomaly_flag"] = "ANOMALY DETECTED"
-                    farm["ai_status"] = "WARNING: UNUSUAL PATTERN"
-                else:
-                    farm["anomaly_flag"] = "NORMAL"
-                    farm["ai_status"] = "AI MONITORING ACTIVE"
-
-            # 3. AUTOMATION LOGIC: FANS
-            if farm["temp"] > TARGET_TEMP:
+            # 2. AUTOMATION LOGIC
+            # Fan Control based on Temp
+            if farm_data["temp"] > TARGET_TEMP:
                 GPIO.output(RELAYS['fan_1'], GPIO.LOW)
                 GPIO.output(RELAYS['fan_2'], GPIO.LOW)
-                farm["fan_state"] = "ON"
+                farm_data["fan_state"] = "ON"
             else:
                 GPIO.output(RELAYS['fan_1'], GPIO.HIGH)
                 GPIO.output(RELAYS['fan_2'], GPIO.HIGH)
-                farm["fan_state"] = "OFF"
+                farm_data["fan_state"] = "OFF"
 
-            # 4. LOGIC: LIGHTS
-            # Example logic: Lights stay ON while loop runs
+            # Light Control (Manual ON for testing, but mapped to dashboard)
+            # You can add scheduling here later
             GPIO.output(RELAYS['light'], GPIO.LOW)
-            farm["light_state"] = "ON"
+            farm_data["light_state"] = "ON"
 
-            # 5. SAFETY & DASHBOARD UPDATES
-            farm["timestamp"] = datetime.now().strftime("%H:%M:%S")
-            farm["safety"] = "SAFE"
-            
+            # Pump State Tracking
+            pump_is_on = GPIO.input(RELAYS['water_pump']) == GPIO.LOW
+            farm_data["pump_state"] = "ON" if pump_is_on else "OFF"
+
+            # 3. SYSTEM HOUSEKEEPING
+            farm_data["timestamp"] = datetime.now().strftime("%H:%M:%S")
+            farm_data["safety"] = "SAFE"
+
+            # Write to the file that stunning_dashboard.html reads
             with open("dashboard.json", "w") as f:
-                json.dump(farm, f)
+                json.dump(farm_data, f)
 
-            # Print status to terminal
-            ml_tag = f"[{farm['ai_status']}]"
-            print(f"[{farm['timestamp']}] T:{farm['temp']}C | pH:{farm['ph']} | {ml_tag}      ", end='\r')
-            
+            # Local Console Output
+            print(f"[{farm_data['timestamp']}] Temp: {farm_data['temp']}C | pH: {farm_data['ph']} | Fans: {farm_data['fan_state']}      ", end='\r')
             time.sleep(2)
 
-        except KeyboardInterrupt: 
-            print("\nShutting down gracefully...")
+        except KeyboardInterrupt:
             break
         except Exception as e:
-            print(f"\nCycle Error: {e}")
+            print(f"\nSystem Error: {e}")
+            farm_data["safety"] = "ERROR"
             time.sleep(2)
 
+class CustomHandler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        # Redirect the root path to your stunning dashboard
+        if self.path == '/':
+            self.path = '/stunning_dashboard.html'
+        return http.server.SimpleHTTPRequestHandler.do_GET(self)
+
 if __name__ == "__main__":
-    # Start Web Dashboard Server (Port 8000)
-    threading.Thread(target=lambda: socketserver.TCPServer(("", 8000), http.server.SimpleHTTPRequestHandler).serve_forever(), daemon=True).start()
+    # Start the web server in a background thread
+    PORT = 8000
+    server = socketserver.TCPServer(("", PORT), CustomHandler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
     
     try:
-        run_automation()
+        main_loop()
     finally:
-        # Emergency Shutdown: Turn everything OFF (HIGH)
-        for pin in RELAYS.values(): 
+        print("\nShutting down safely...")
+        for pin in RELAYS.values():
             GPIO.output(pin, GPIO.HIGH)
         GPIO.cleanup()
-        print("\nSystem Secured.")
+        print("GPIO cleaned up. All power OFF.")
