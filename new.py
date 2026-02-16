@@ -1,13 +1,42 @@
-import board
-import busio
-import adafruit_bme280.advanced as adafruit_bme280
+sudo nano /etc/systemd/system/verticalfarm.service
 
-# Create I2C bus
-i2c = busio.I2C(board.SCL, board.SDA)
+#--------------------------------------------------------->
 
-# Create BME280 sensor object
-bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=0x76)
+[Unit]
+Description=Vertical Farm Automation System
+After=network.target
 
-print(f"Temperature: {bme280.temperature:.2f} °C")
-print(f"Humidity: {bme280.humidity:.2f} %")
-print(f"Pressure: {bme280.pressure:.2f} hPa")
+[Service]
+# The user running the script
+User=pi
+
+# The exact path to your project folder
+WorkingDirectory=/home/pi/Downloads/VF-main
+
+# The path to your venv Python, followed by the path to main.py
+ExecStart=/home/pi/Downloads/VF-main/venv/bin/python3 /home/pi/Downloads/VF-main/main.py
+
+# Automatically restart if the script crashes
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+
+#--------------------------------------------------------->
+
+
+sudo systemctl daemon-reload
+sudo systemctl enable verticalfarm.service
+sudo systemctl start verticalfarm.service
+
+
+
+#--------------------------------------------------------->
+
+nano ~/.config/wayfire.ini
+
+#--------------------------------------------------------->
+
+dashboard = chromium-browser --kiosk --noerrdialogs --disable-infobars http://localhost:8000/stunning_dashboard.html

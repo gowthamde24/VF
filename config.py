@@ -26,12 +26,12 @@ TEMP_LIMIT = 30.0       # Safety Cutoff
 
 # Lighting Schedule (8 Hours)
 LIGHT_START_HOUR = 6    # 6 AM
-LIGHT_END_HOUR = 14     # 2 PM (8 hours duration)
+LIGHT_END_HOUR = 22     #(14-16 hours duration)
 
 # Timers
-WATER_DURATION = 300    # 15 Minutes ON
-WATER_INTERVAL = 86100   # 45 Minutes OFF
-DOSE_DURATION = 2.0     # 1.5 Seconds dosing
+WATER_DURATION = 300    # 05 Minutes ON
+WATER_INTERVAL = 86100   # 23.9 Minutes OFF
+DOSE_DURATION = 0.5     # 1.5 Seconds dosing
 DOSE_WAIT_TIME = 900    # 15 Minutes wait
 
 # Chemistry
@@ -41,7 +41,7 @@ TARGET_EC = 1.2         # Target EC (mS/cm)
 EC_TOLERANCE = 0.2
 
 # Safety
-MIN_WATER_VOLTAGE = 1.5 # Tank Empty Limit
+MIN_WATER_VOLTAGE = 0.5 # Tank Empty Limit
 
 # pH Calibration Values (Default placeholders - update after calibration)
 PH_SLOPE = -5.7706
