@@ -1,3 +1,248 @@
+# import time
+# import json
+# import threading
+# import http.server
+# import socketserver
+# import webbrowser
+# import os
+# from datetime import datetime
+# import config  # Import settings from config.py
+
+# # --- NATIVE RASPBERRY PI IMPORTS ---
+# # These will crash if run on a PC/Mac, but will work perfectly on the Pi
+# import RPi.GPIO as GPIO
+# import board
+# import busio
+# import adafruit_ads1x15.ads1115 as ADS
+# from adafruit_ads1x15.analog_in import AnalogIn
+# from adafruit_bme280 import basic as adafruit_bme280
+# from ml_engine import AnomalyDetector
+
+# # --- WEB SERVER LOGIC ---
+# def start_web_server():
+#     """Starts a simple HTTP server in a background thread."""
+#     PORT = 8000
+#     class QuietHandler(http.server.SimpleHTTPRequestHandler):
+#         def log_message(self, format, *args): pass
+            
+#     try:
+#         if not os.path.exists("stunning_dashboard.html"):
+#             print("! Warning: stunning_dashboard.html not found.")
+            
+#         with socketserver.TCPServer(("", PORT), QuietHandler) as httpd:
+#             print(f"-> Web Server Running: http://localhost:{PORT}")
+#             httpd.serve_forever()
+#     except OSError:
+#         print(f"! Port {PORT} is busy. Server might already be running.")
+
+# # --- SETUP ---
+# print("System Booting (Production Pi Mode)...")
+
+# # 1. Initialize GPIO
+# GPIO.setmode(GPIO.BCM)
+# GPIO.setwarnings(False)
+
+# for name, pin in config.RELAYS.items():
+#     GPIO.setup(pin, GPIO.OUT)
+#     GPIO.output(pin, GPIO.HIGH) # ALL RELAYS OFF INITIALLY
+
+# # 2. Initialize I2C Bus
+# i2c = busio.I2C(board.SCL, board.SDA)
+
+# # 3. Initialize Sensors (With basic try/except to prevent total crash if a wire is loose)
+# bme280 = None
+# try:
+#     bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=config.I2C_ADDR_BME280)
+#     print("-> BME280 Climate Sensor connected.")
+# except Exception as e:
+#     print(f"! BME280 Temp Sensor Error: {e}")
+
+# ads, ph_chan, ec_chan, level_chan = None, None, None, None
+# try:
+#     ads = ADS.ADS1115(i2c, address=config.I2C_ADDR_ADS1115)
+#     ph_chan = AnalogIn(ads, config.CHAN_PH)
+#     ec_chan = AnalogIn(ads, config.CHAN_EC)
+#     level_chan = AnalogIn(ads, config.CHAN_LEVEL)
+#     print("-> ADS1115 ADC connected.")
+# except Exception as e:
+#     print(f"! ADS1115 Analog Error: {e}")
+
+# # 4. Initialize Machine Learning
+# detector = AnomalyDetector()
+# print("-> ML Anomaly Engine initialized.")
+
+# # --- AUTO-LAUNCH DASHBOARD ---
+# server_thread = threading.Thread(target=start_web_server, daemon=True)
+# server_thread.start()
+# time.sleep(1)
+# try:
+#     # This tries to open the browser automatically on the Pi's desktop
+#     webbrowser.open(f"http://localhost:8000/stunning_dashboard.html")
+# except:
+#     pass
+
+# # --- LOGIC VARIABLES ---
+# last_water_time = time.time()  # Start with current time so it doesn't water instantly on boot
+# last_dose_time = 0
+# is_watering = False            # Tracks if pump is currently running
+# water_start_time = 0           # Tracks when the pump turned on
+
+# def get_ec(voltage):
+#     # Basic calibration: voltage * K. (Assuming 1V ~= 1.0 mS/cm baseline)
+#     if voltage < 0.1: return 0.0
+#     return round(voltage * 1.0, 2)
+
+# def update_dashboard_file(temp, hum, ph, ec, light_s, fan_s, pump_s, safety_s, ml_data=None):
+#     data = {
+#         "timestamp": datetime.now().strftime('%H:%M:%S'),
+#         "temp": temp,
+#         "hum": hum,
+#         "ph": ph,
+#         "ec": ec, 
+#         "light_state": light_s,
+#         "fan_state": fan_s,
+#         "pump_state": pump_s,
+#         "safety": safety_s,
+#         "ml": ml_data if ml_data else {"health_score": 100, "status": "OK", "prediction": "Normal"}
+#     }
+#     try:
+#         with open("dashboard.json", "w") as f:
+#             json.dump(data, f)
+#     except: pass
+
+# def check_safety():
+#     if not level_chan: return True
+#     # If the tank is empty, the sensor reads < 0.5V
+#     if level_chan.voltage < config.MIN_WATER_VOLTAGE:
+#         GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH) # FORCE OFF
+#         return False
+#     return True
+
+# def run_control_loop():
+#     global last_water_time, last_dose_time, is_watering, water_start_time
+    
+#     # 1. READ SENSORS
+#     t, h = (25.0, 50.0) # Defaults if sensor fails
+#     if bme280: 
+#         t = round(bme280.temperature, 1)
+#         h = round(bme280.relative_humidity, 0)
+    
+#     ph_val = 6.0 # Default
+#     if ph_chan:
+#         v = ph_chan.voltage
+#         slope = getattr(config, 'PH_SLOPE', -5.7706) 
+#         intercept = getattr(config, 'PH_INTERCEPT', 15.8918)
+#         if v > 0.1: 
+#             ph_val = round((slope * v) + intercept, 2)
+
+#     ec_val = 1.2 # Default
+#     if ec_chan:
+#         ec_val = get_ec(ec_chan.voltage)
+
+#     # 2. SAFETY CHECK
+#     is_safe = check_safety()
+#     safety_str = "SAFE" if is_safe else "ALERT"
+    
+#     # 3. ML ANALYSIS
+#     ml_data = detector.analyze({'temp': t, 'hum': h, 'ph': ph_val, 'ec': ec_val})
+
+#     if not is_safe:
+#         print("🚨 ALERT: Low Water! Pump Disabled.")
+#         is_watering = False # Reset watering state if emergency stop triggers
+#         update_dashboard_file(t, h, ph_val, ec_val, "OFF", "OFF", "DISABLED", safety_str, ml_data)
+#         return
+
+#     now = datetime.now()
+#     current_time = time.time()
+    
+#     light_state = "OFF"
+#     fan_state = "OFF"
+#     pump_state = "OFF"
+
+#     # 4. LIGHTS (Cycle based on config)
+#     if config.LIGHT_START_HOUR <= now.hour < config.LIGHT_END_HOUR and t < config.TEMP_LIMIT:
+#         GPIO.output(config.RELAYS['light'], GPIO.LOW)
+#         light_state = "ON"
+#     else:
+#         GPIO.output(config.RELAYS['light'], GPIO.HIGH)
+
+#     # 5. FANS (Both Fans)
+#     if t > config.TARGET_TEMP:
+#         GPIO.output(config.RELAYS['fan_1'], GPIO.LOW)
+#         GPIO.output(config.RELAYS['fan_2'], GPIO.LOW)
+#         fan_state = "ON"
+#     else:
+#         GPIO.output(config.RELAYS['fan_1'], GPIO.HIGH)
+#         GPIO.output(config.RELAYS['fan_2'], GPIO.HIGH)
+
+#     # 6. WATER (Timer Cycle) - NON BLOCKING
+#     # Check if it's time to START watering
+#     if not is_watering and (current_time - last_water_time > config.WATER_INTERVAL):
+#         is_watering = True
+#         water_start_time = current_time
+#         GPIO.output(config.RELAYS['water_pump'], GPIO.LOW)
+        
+#     # Check if it's time to STOP watering
+#     elif is_watering and (current_time - water_start_time > config.WATER_DURATION):
+#         is_watering = False
+#         last_water_time = current_time
+#         GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
+        
+#     # Maintain state for dashboard
+#     if is_watering:
+#         pump_state = "ON"
+
+#     # 7. CHEMISTRY (pH & EC Dosing)
+#     if current_time - last_dose_time > config.DOSE_WAIT_TIME:
+#         dosed = False
+        
+#         # pH Logic
+#         if ph_val > 1.0: # Prevent dosing if probe is returning weird 0.0 values
+#             if ph_val > (config.TARGET_PH + config.PH_TOLERANCE):
+#                 GPIO.output(config.RELAYS['ph_down'], GPIO.LOW)
+#                 time.sleep(config.DOSE_DURATION)
+#                 GPIO.output(config.RELAYS['ph_down'], GPIO.HIGH)
+#                 dosed = True
+#             elif ph_val < (config.TARGET_PH - config.PH_TOLERANCE):
+#                 GPIO.output(config.RELAYS['ph_up'], GPIO.LOW)
+#                 time.sleep(config.DOSE_DURATION)
+#                 GPIO.output(config.RELAYS['ph_up'], GPIO.HIGH)
+#                 dosed = True
+        
+#         # EC Logic (Nutrients)
+#         if not dosed and ec_val < (config.TARGET_EC - config.EC_TOLERANCE):
+#             # Dose Nutrient A
+#             GPIO.output(config.RELAYS['nutrient_a'], GPIO.LOW)
+#             time.sleep(config.DOSE_DURATION)
+#             GPIO.output(config.RELAYS['nutrient_a'], GPIO.HIGH)
+            
+#             time.sleep(0.5) # Short pause between A and B
+            
+#             # Dose Nutrient B
+#             GPIO.output(config.RELAYS['nutrient_b'], GPIO.LOW)
+#             time.sleep(config.DOSE_DURATION)
+#             GPIO.output(config.RELAYS['nutrient_b'], GPIO.HIGH)
+#             dosed = True
+            
+#         if dosed:
+#             last_dose_time = current_time
+
+#     # 8. UPDATE DASHBOARD & LOG
+#     update_dashboard_file(t, h, ph_val, ec_val, light_state, fan_state, pump_state, safety_str, ml_data)
+    
+#     status = f"T:{t}°C | Hum:{h}% | pH:{ph_val} | EC:{ec_val}"
+#     if is_watering: status += " [WATERING]"
+#     print(f"[{now.strftime('%H:%M:%S')}] {status}") 
+
+# # --- EXECUTE ---
+# try:
+#     while True:
+#         run_control_loop()
+#         time.sleep(2)
+# except KeyboardInterrupt:
+#     print("\nShutting down... turning off all relays.")
+#     GPIO.cleanup()
+
 import time
 import json
 import threading
@@ -9,7 +254,6 @@ from datetime import datetime
 import config  # Import settings from config.py
 
 # --- NATIVE RASPBERRY PI IMPORTS ---
-# These will crash if run on a PC/Mac, but will work perfectly on the Pi
 import RPi.GPIO as GPIO
 import board
 import busio
@@ -26,36 +270,30 @@ def start_web_server():
         def log_message(self, format, *args): pass
             
     try:
-        if not os.path.exists("stunning_dashboard.html"):
-            print("! Warning: stunning_dashboard.html not found.")
-            
         with socketserver.TCPServer(("", PORT), QuietHandler) as httpd:
             print(f"-> Web Server Running: http://localhost:{PORT}")
             httpd.serve_forever()
     except OSError:
-        print(f"! Port {PORT} is busy. Server might already be running.")
+        pass
 
 # --- SETUP ---
-print("System Booting (Production Pi Mode)...")
+print("System Booting (Production Mode)...")
 
-# 1. Initialize GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
 for name, pin in config.RELAYS.items():
     GPIO.setup(pin, GPIO.OUT)
-    GPIO.output(pin, GPIO.HIGH) # ALL RELAYS OFF INITIALLY
+    GPIO.output(pin, GPIO.HIGH) # ALL RELAYS OFF
 
-# 2. Initialize I2C Bus
 i2c = busio.I2C(board.SCL, board.SDA)
 
-# 3. Initialize Sensors (With basic try/except to prevent total crash if a wire is loose)
 bme280 = None
 try:
     bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=config.I2C_ADDR_BME280)
-    print("-> BME280 Climate Sensor connected.")
+    print("-> Climate Sensor connected.")
 except Exception as e:
-    print(f"! BME280 Temp Sensor Error: {e}")
+    print(f"! Climate Sensor Error: {e}")
 
 ads, ph_chan, ec_chan, level_chan = None, None, None, None
 try:
@@ -63,46 +301,28 @@ try:
     ph_chan = AnalogIn(ads, config.CHAN_PH)
     ec_chan = AnalogIn(ads, config.CHAN_EC)
     level_chan = AnalogIn(ads, config.CHAN_LEVEL)
-    print("-> ADS1115 ADC connected.")
+    print("-> ADC connected.")
 except Exception as e:
-    print(f"! ADS1115 Analog Error: {e}")
+    print(f"! ADC Analog Error: {e}")
 
-# 4. Initialize Machine Learning
 detector = AnomalyDetector()
-print("-> ML Anomaly Engine initialized.")
 
-# --- AUTO-LAUNCH DASHBOARD ---
-server_thread = threading.Thread(target=start_web_server, daemon=True)
-server_thread.start()
-time.sleep(1)
-try:
-    # This tries to open the browser automatically on the Pi's desktop
-    webbrowser.open(f"http://localhost:8000/stunning_dashboard.html")
-except:
-    pass
+# Launch Dashboard Server
+threading.Thread(target=start_web_server, daemon=True).start()
 
 # --- LOGIC VARIABLES ---
-last_water_time = time.time()  # Start with current time so it doesn't water instantly on boot
+last_water_time = time.time()
 last_dose_time = 0
-is_watering = False            # Tracks if pump is currently running
-water_start_time = 0           # Tracks when the pump turned on
-
-def get_ec(voltage):
-    # Basic calibration: voltage * K. (Assuming 1V ~= 1.0 mS/cm baseline)
-    if voltage < 0.1: return 0.0
-    return round(voltage * 1.0, 2)
+is_watering = False
+water_start_time = 0
+current_activity = "System Initialized"
 
 def update_dashboard_file(temp, hum, ph, ec, light_s, fan_s, pump_s, safety_s, ml_data=None):
     data = {
         "timestamp": datetime.now().strftime('%H:%M:%S'),
-        "temp": temp,
-        "hum": hum,
-        "ph": ph,
-        "ec": ec, 
-        "light_state": light_s,
-        "fan_state": fan_s,
-        "pump_state": pump_s,
-        "safety": safety_s,
+        "temp": temp, "hum": hum, "ph": ph, "ec": ec, 
+        "light_state": light_s, "fan_state": fan_s, "pump_state": pump_s,
+        "safety": safety_s, "activity": current_activity,
         "ml": ml_data if ml_data else {"health_score": 100, "status": "OK", "prediction": "Normal"}
     }
     try:
@@ -110,135 +330,126 @@ def update_dashboard_file(temp, hum, ph, ec, light_s, fan_s, pump_s, safety_s, m
             json.dump(data, f)
     except: pass
 
-def check_safety():
-    if not level_chan: return True
-    # If the tank is empty, the sensor reads < 0.5V
-    if level_chan.voltage < config.MIN_WATER_VOLTAGE:
-        GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH) # FORCE OFF
-        return False
-    return True
-
 def run_control_loop():
-    global last_water_time, last_dose_time, is_watering, water_start_time
+    global last_water_time, last_dose_time, is_watering, water_start_time, current_activity
     
     # 1. READ SENSORS
-    t, h = (25.0, 50.0) # Defaults if sensor fails
+    t, h = (25.0, 50.0) 
     if bme280: 
         t = round(bme280.temperature, 1)
         h = round(bme280.relative_humidity, 0)
     
-    ph_val = 6.0 # Default
+    ph_val = 6.0 
     if ph_chan:
         v = ph_chan.voltage
-        slope = getattr(config, 'PH_SLOPE', -5.7706) 
-        intercept = getattr(config, 'PH_INTERCEPT', 15.8918)
-        if v > 0.1: 
-            ph_val = round((slope * v) + intercept, 2)
+        ph_val = round((config.PH_SLOPE * v) + config.PH_INTERCEPT, 2)
 
-    ec_val = 1.2 # Default
-    if ec_chan:
-        ec_val = get_ec(ec_chan.voltage)
+    ec_val = 1.2 
+    ec_voltage = ec_chan.voltage if ec_chan else 1.2
+    ec_val = round(ec_voltage * 1.0, 2)
 
     # 2. SAFETY CHECK
-    is_safe = check_safety()
-    safety_str = "SAFE" if is_safe else "ALERT"
+    is_safe = True
+    if level_chan and level_chan.voltage < config.MIN_WATER_VOLTAGE:
+        GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
+        # Safety: Turn off all dosing pumps if water is too low
+        GPIO.output(config.RELAYS['ph_down'], GPIO.HIGH)
+        GPIO.output(config.RELAYS['ph_up'], GPIO.HIGH)
+        GPIO.output(config.RELAYS['nutrient_a'], GPIO.HIGH)
+        GPIO.output(config.RELAYS['nutrient_b'], GPIO.HIGH)
+        is_safe = False
     
-    # 3. ML ANALYSIS
+    safety_str = "SAFE" if is_safe else "ALERT"
     ml_data = detector.analyze({'temp': t, 'hum': h, 'ph': ph_val, 'ec': ec_val})
 
     if not is_safe:
-        print("🚨 ALERT: Low Water! Pump Disabled.")
-        is_watering = False # Reset watering state if emergency stop triggers
+        current_activity = "CRITICAL: LOW WATER"
         update_dashboard_file(t, h, ph_val, ec_val, "OFF", "OFF", "DISABLED", safety_str, ml_data)
         return
 
     now = datetime.now()
-    current_time = time.time()
+    cur_time = time.time()
     
-    light_state = "OFF"
-    fan_state = "OFF"
-    pump_state = "OFF"
+    light_state, fan_state, pump_state = "OFF", "OFF", "OFF"
+    current_activity = "Monitoring"
 
-    # 4. LIGHTS (Cycle based on config)
-    if config.LIGHT_START_HOUR <= now.hour < config.LIGHT_END_HOUR and t < config.TEMP_LIMIT:
-        GPIO.output(config.RELAYS['light'], GPIO.LOW)
-        light_state = "ON"
+    # 3. LIGHTS (8-Hour Cycle)
+    if config.LIGHT_START_HOUR <= now.hour < config.LIGHT_END_HOUR:
+        GPIO.output(config.RELAYS['light'], GPIO.LOW); light_state = "ON"
     else:
         GPIO.output(config.RELAYS['light'], GPIO.HIGH)
 
-    # 5. FANS (Both Fans)
+    # 4. FANS
     if t > config.TARGET_TEMP:
         GPIO.output(config.RELAYS['fan_1'], GPIO.LOW)
-        GPIO.output(config.RELAYS['fan_2'], GPIO.LOW)
-        fan_state = "ON"
+        GPIO.output(config.RELAYS['fan_2'], GPIO.LOW); fan_state = "ON"
+        current_activity = "Cooling Active"
     else:
         GPIO.output(config.RELAYS['fan_1'], GPIO.HIGH)
         GPIO.output(config.RELAYS['fan_2'], GPIO.HIGH)
 
-    # 6. WATER (Timer Cycle) - NON BLOCKING
-    # Check if it's time to START watering
-    if not is_watering and (current_time - last_water_time > config.WATER_INTERVAL):
+    # 5. WATER CYCLE (Non-Blocking)
+    if not is_watering and (cur_time - last_water_time > config.WATER_INTERVAL):
         is_watering = True
-        water_start_time = current_time
+        water_start_time = cur_time
         GPIO.output(config.RELAYS['water_pump'], GPIO.LOW)
-        
-    # Check if it's time to STOP watering
-    elif is_watering and (current_time - water_start_time > config.WATER_DURATION):
+    elif is_watering and (cur_time - water_start_time > config.WATER_DURATION):
         is_watering = False
-        last_water_time = current_time
+        last_water_time = cur_time
         GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
-        
-    # Maintain state for dashboard
-    if is_watering:
+    
+    if is_watering: 
         pump_state = "ON"
+        current_activity = "Irrigation Active"
 
-    # 7. CHEMISTRY (pH & EC Dosing)
-    if current_time - last_dose_time > config.DOSE_WAIT_TIME:
+    # 6. INDIVIDUAL PUMP DOSING
+    if cur_time - last_dose_time > config.DOSE_WAIT_TIME:
         dosed = False
         
-        # pH Logic
-        if ph_val > 1.0: # Prevent dosing if probe is returning weird 0.0 values
-            if ph_val > (config.TARGET_PH + config.PH_TOLERANCE):
-                GPIO.output(config.RELAYS['ph_down'], GPIO.LOW)
-                time.sleep(config.DOSE_DURATION)
-                GPIO.output(config.RELAYS['ph_down'], GPIO.HIGH)
-                dosed = True
-            elif ph_val < (config.TARGET_PH - config.PH_TOLERANCE):
-                GPIO.output(config.RELAYS['ph_up'], GPIO.LOW)
-                time.sleep(config.DOSE_DURATION)
-                GPIO.output(config.RELAYS['ph_up'], GPIO.HIGH)
-                dosed = True
+        # pH Down
+        if ph_val > (config.TARGET_PH + config.PH_TOLERANCE):
+            current_activity = "Dosing: pH Down"
+            update_dashboard_file(t, h, ph_val, ec_val, light_state, fan_state, pump_state, safety_str, ml_data)
+            GPIO.output(config.RELAYS['ph_down'], GPIO.LOW)
+            time.sleep(config.PH_DOWN_DURATION)
+            GPIO.output(config.RELAYS['ph_down'], GPIO.HIGH)
+            dosed = True
         
-        # EC Logic (Nutrients)
-        if not dosed and ec_val < (config.TARGET_EC - config.EC_TOLERANCE):
-            # Dose Nutrient A
+        # pH Up
+        elif ph_val < (config.TARGET_PH - config.PH_TOLERANCE):
+            current_activity = "Dosing: pH Up"
+            update_dashboard_file(t, h, ph_val, ec_val, light_state, fan_state, pump_state, safety_str, ml_data)
+            GPIO.output(config.RELAYS['ph_up'], GPIO.LOW)
+            time.sleep(config.PH_UP_DURATION)
+            GPIO.output(config.RELAYS['ph_up'], GPIO.HIGH)
+            dosed = True
+        
+        # Nutrients (A then B)
+        elif not dosed and ec_val < (config.TARGET_EC - config.EC_TOLERANCE):
+            current_activity = "Dosing: Nutrient A"
+            update_dashboard_file(t, h, ph_val, ec_val, light_state, fan_state, pump_state, safety_str, ml_data)
             GPIO.output(config.RELAYS['nutrient_a'], GPIO.LOW)
-            time.sleep(config.DOSE_DURATION)
+            time.sleep(config.NUTRI_A_DURATION)
             GPIO.output(config.RELAYS['nutrient_a'], GPIO.HIGH)
             
-            time.sleep(0.5) # Short pause between A and B
+            time.sleep(1) # Prevent voltage sag
             
-            # Dose Nutrient B
+            current_activity = "Dosing: Nutrient B"
+            update_dashboard_file(t, h, ph_val, ec_val, light_state, fan_state, pump_state, safety_str, ml_data)
             GPIO.output(config.RELAYS['nutrient_b'], GPIO.LOW)
-            time.sleep(config.DOSE_DURATION)
+            time.sleep(config.NUTRI_B_DURATION)
             GPIO.output(config.RELAYS['nutrient_b'], GPIO.HIGH)
             dosed = True
             
-        if dosed:
-            last_dose_time = current_time
+        if dosed: last_dose_time = cur_time
 
-    # 8. UPDATE DASHBOARD & LOG
+    # 7. EXPORT
     update_dashboard_file(t, h, ph_val, ec_val, light_state, fan_state, pump_state, safety_str, ml_data)
-    
-    status = f"T:{t}°C | Hum:{h}% | pH:{ph_val} | EC:{ec_val}"
-    if is_watering: status += " [WATERING]"
-    print(f"[{now.strftime('%H:%M:%S')}] {status}") 
+    print(f"[{now.strftime('%H:%M:%S')}] {current_activity} | T:{t} pH:{ph_val} EC:{ec_val}", end='\r')
 
-# --- EXECUTE ---
 try:
     while True:
         run_control_loop()
         time.sleep(2)
 except KeyboardInterrupt:
-    print("\nShutting down... turning off all relays.")
     GPIO.cleanup()
