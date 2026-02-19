@@ -1,4 +1,4 @@
-# 🌱 Intelligent Vertical Farm System (IoT + AI)
+# DESIGN AND IMPLEMENTATION OF AN INTELLIGENT VERTICAL FARMING SYSTEM USING IOT AND MACHINE LEARNING
 
 Automated Hydroponic Control System using Raspberry Pi 5
 
@@ -87,7 +87,7 @@ Use the menu to toggle relays 1-8 and read sensor values.
 Run the automated controller:
 
 ```bash
-python3 main.py
+python3 vf_main.py
 
 The system will start reading sensors, controlling relays, and printing status logs.
 
@@ -95,7 +95,7 @@ The system will start reading sensors, controlling relays, and printing status l
 
 To see the stunning graphical interface on your screen:
 
-1. Keep `main.py` running (it generates `dashboard.json`).
+1. Keep `vf_main.py` running (it generates `dashboard.json`).
 2. Open a new terminal window.
 3. Start a local web server:
 
