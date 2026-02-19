@@ -54,7 +54,7 @@ source venv/bin/activate
 
 ## 2. Install Dependencies
 
-Install all required Python libraries for sensors, AI, and GPIO.
+Install all required Python libraries for sensors, ML, and GPIO libraries.
 
 ```bash
 pip install adafruit-circuitpython-bme280 adafruit-circuitpython-ads1x15 adafruit-blinka smbus2 rpi-lgpio scikit-learn pandas numpy joblib
