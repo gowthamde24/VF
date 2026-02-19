@@ -2,41 +2,108 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>VERTICAL FARM OS</title>
-    <!-- Use Google Fonts if online, fallback to system fonts if offline -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>GROW SMART OS</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for stunning icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
-            --bg-dark: #0f0f13;
-            --panel-bg: rgba(25, 25, 35, 0.95);
-            --neon-blue: #00f3ff;
-            --neon-green: #00ff9d;
-            --neon-pink: #ff0055;
-            --neon-purple: #bc13fe;
-            --text-main: #ffffff;
+            /* Vibrant Light Theme Palette */
+            --bg-base: #e0eaf5;
+            --panel-bg: rgba(255, 255, 255, 0.65);
+            --header-bg: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(255, 255, 255, 0.6);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            
+            /* Stunning Gradients */
+            --grad-red: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+            --grad-blue: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+            --grad-green: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --grad-purple: linear-gradient(135deg, #b026ff 0%, #6510ff 100%);
+            --grad-orange: linear-gradient(135deg, #f12711 0%, #f5af19 100%);
+            --grad-cyan: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            
+            /* Solid Accents */
+            --color-red: #ff0844;
+            --color-blue: #0072ff;
+            --color-green: #11998e;
+            --color-purple: #b026ff;
+            --color-orange: #f5af19;
+            --color-cyan: #00f2fe;
+
+            --shadow-soft: 0 8px 32px rgba(31, 38, 135, 0.07);
+            --shadow-hover: 0 15px 45px rgba(31, 38, 135, 0.15);
+            --blur: blur(16px);
+            --icon-box-bg: rgba(255, 255, 255, 0.9);
+            --ai-box-bg: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Dark Mode Palette Overlay */
+        [data-theme="dark"] {
+            --bg-base: #070b14;
+            --panel-bg: rgba(15, 23, 42, 0.5);
+            --header-bg: rgba(15, 23, 42, 0.75);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --shadow-hover: 0 15px 45px rgba(0, 0, 0, 0.6);
+            --icon-box-bg: rgba(30, 41, 59, 0.8);
+            --ai-box-bg: rgba(30, 41, 59, 0.6);
         }
 
         body {
-            background-color: var(--bg-dark);
+            background-color: var(--bg-base);
             color: var(--text-main);
-            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 20px;
             overflow: hidden;
             height: 100vh;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(188, 19, 254, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(0, 243, 255, 0.1) 0%, transparent 40%);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            position: relative;
+        }
+
+        /* Animated Glowing Background Orbs */
+        .ambient-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            overflow: hidden;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        [data-theme="dark"] .orb { opacity: 0.3; filter: blur(100px); }
+        .orb-1 { width: 50vw; height: 50vw; background: var(--color-purple); top: -10%; left: -10%; }
+        .orb-2 { width: 40vw; height: 40vw; background: var(--color-cyan); bottom: -10%; right: -5%; animation-delay: -5s; }
+        .orb-3 { width: 35vw; height: 35vw; background: var(--color-orange); top: 40%; left: 40%; animation-delay: -10s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(10vw, 10vh) scale(1.2); }
         }
 
         /* GRID LAYOUT */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 300px 1fr 300px;
-            grid-template-rows: 80px 1fr 150px;
-            gap: 20px;
-            height: 90vh;
+            grid-template-columns: 340px 1fr 340px;
+            grid-template-rows: 90px 1fr 160px;
+            gap: 25px;
+            height: 92vh;
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
         }
 
         /* HEADER */
@@ -45,54 +112,93 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2px solid var(--neon-blue);
-            padding: 0 20px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 10px;
+            padding: 0 35px;
+            background: var(--header-bg);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-radius: 24px;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--shadow-soft);
+            transition: all 0.5s ease;
         }
 
         h1 {
             font-family: 'Orbitron', sans-serif;
-            font-size: 2.5rem;
+            font-size: 2.6rem;
             margin: 0;
-            text-shadow: 0 0 10px var(--neon-blue);
+            background: var(--grad-green);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            letter-spacing: 1px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
         }
 
-        /* CARD STYLES */
+        /* CARD STYLES (GLASSMORPHISM) */
         .card {
             background: var(--panel-bg);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-radius: 24px;
+            padding: 30px;
+            border: 1px solid var(--card-border);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            transition: transform 0.3s;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover { 
+            transform: translateY(-8px); 
+            box-shadow: var(--shadow-hover);
         }
 
         .label {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #888;
-            margin-bottom: 10px;
+            letter-spacing: 2.5px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1;
         }
 
+        .label i {
+            font-size: 1.5rem;
+        }
+
+        /* Gradient Text for Values */
         .value {
             font-family: 'Orbitron', sans-serif;
-            font-size: 3.5rem;
-            font-weight: bold;
+            font-size: 3.2rem;
+            font-weight: 900;
+            z-index: 1;
         }
+        
+        .val-temp { background: var(--grad-red); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .val-hum { background: var(--grad-blue); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .val-ph { background: var(--grad-purple); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .val-ec { background: var(--grad-cyan); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        .unit { font-size: 1.2rem; color: #aaa; margin-left: 5px; }
+        .unit { font-size: 1.2rem; color: var(--text-muted); margin-left: 5px; font-weight: 600; -webkit-text-fill-color: initial;}
 
         /* CIRCULAR PROGRESS (SVG) */
         .progress-ring-circle {
-            transition: stroke-dashoffset 0.35s;
+            transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s;
             transform: rotate(-90deg);
             transform-origin: 50% 50%;
+            stroke-linecap: round;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
+        }
+        [data-theme="dark"] .progress-ring-circle {
+            filter: drop-shadow(0 0 10px currentColor);
         }
 
         /* ACTUATORS ROW */
@@ -102,260 +208,359 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            background: rgba(255,255,255,0.05);
-            border-radius: 20px;
-            padding: 10px;
+            background: var(--panel-bg);
+            backdrop-filter: var(--blur);
+            border-radius: 24px;
+            padding: 15px 10px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--card-border);
         }
 
         .device {
             display: flex;
             flex-direction: column;
             align-items: center;
-            opacity: 0.4;
-            transition: all 0.3s;
+            transition: all 0.4s;
+            opacity: 0.5;
+            flex: 1;
         }
 
         .device.on {
             opacity: 1;
-            text-shadow: 0 0 10px currentColor;
+            transform: scale(1.1);
         }
 
         .icon-box {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.05);
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            background: var(--icon-box-bg);
+            color: var(--text-muted);
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 10px;
-            border: 2px solid transparent;
+            margin-bottom: 8px;
+            border: 1px solid var(--card-border);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 1.8rem;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 10px rgba(0,0,0,0.05);
         }
 
-        /* SVG ICONS CONFIG */
-        .device svg {
-            width: 32px;
-            height: 32px;
-            fill: currentColor;
-        }
+        /* Vibrant Active States for all Actuators */
+        .device.on#dev-light .icon-box { background: var(--grad-orange); color: white; box-shadow: 0 8px 20px rgba(245, 175, 25, 0.4); border: none; }
+        .device.on#dev-pump .icon-box { background: var(--grad-blue); color: white; box-shadow: 0 8px 20px rgba(0, 114, 255, 0.4); border: none; }
+        .device.on#dev-fan .icon-box { background: var(--grad-green); color: white; box-shadow: 0 8px 20px rgba(56, 239, 125, 0.4); border: none; }
+        .device.on#dev-ph-down .icon-box { background: var(--grad-red); color: white; box-shadow: 0 8px 20px rgba(255, 8, 68, 0.4); border: none; }
+        .device.on#dev-ph-up .icon-box { background: var(--grad-purple); color: white; box-shadow: 0 8px 20px rgba(176, 38, 255, 0.4); border: none; }
+        .device.on#dev-nutrients .icon-box { background: var(--grad-cyan); color: white; box-shadow: 0 8px 20px rgba(0, 242, 254, 0.4); border: none; }
+
+        .device .label { font-size: 0.75rem; color: var(--text-main); margin-bottom: 0; letter-spacing: 1px;}
 
         /* ANIMATIONS */
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
-        .device.on .icon-box {
-            border-color: currentColor;
-            box-shadow: 0 0 20px currentColor;
+        .spin-anim i { animation: spin 2.5s linear infinite; }
+        .pulse-anim i { animation: pulse 1.5s ease-in-out infinite; }
+        .bounce-anim i { animation: bounce 2s ease-in-out infinite; }
+
+        /* Status & ML Area */
+        .live-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: var(--grad-green);
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 15px var(--color-green);
+            animation: pulse 2s infinite;
         }
 
-        .spin-anim svg { animation: spin 2s linear infinite; }
-        .pulse-anim svg { animation: pulse 1s ease-in-out infinite; }
-
-        /* WORKFLOW MODAL */
-        #workflow-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-
-        .workflow-diagram {
+        .btn-outline {
+            background: var(--icon-box-bg); 
+            border: 1px solid var(--card-border); 
+            color: var(--text-main); 
+            padding: 10px 24px; 
+            cursor: pointer; 
+            border-radius: 12px;
+            font-weight: 800;
+            transition: all 0.3s;
+            font-family: 'Orbitron', sans-serif;
             display: flex;
-            gap: 20px;
             align-items: center;
-            flex-wrap: wrap;
+            gap: 10px;
             justify-content: center;
+            box-shadow: var(--shadow-soft);
+        }
+        .btn-outline:hover {
+            background: var(--grad-blue);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 8px 20px rgba(0, 114, 255, 0.3);
+            transform: translateY(-2px);
         }
 
-        .wf-step {
-            background: #1a1a2e;
-            padding: 20px;
-            border: 2px solid var(--neon-blue);
-            border-radius: 10px;
-            text-align: center;
-            width: 150px;
-            position: relative;
+        .workflow-overlay {
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: var(--panel-bg); 
+            z-index: 1000; 
+            justify-content: center; 
+            align-items: center; 
+            flex-direction: column; 
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            transition: background 0.5s ease;
         }
 
-        .wf-arrow { font-size: 2rem; color: #555; }
-
-        .wf-step.active {
-            border-color: var(--neon-green);
-            box-shadow: 0 0 20px var(--neon-green);
-            color: var(--neon-green);
-        }
-
-        .close-btn {
-            margin-top: 30px;
-            padding: 10px 30px;
-            background: var(--neon-pink);
-            border: none;
-            border-radius: 5px;
-            color: white;
-            font-size: 1.2rem;
-            cursor: pointer;
+        .glass-divider {
+            width: 80%; height: 2px; 
+            background: linear-gradient(90deg, transparent, var(--card-border), transparent); 
+            margin: 25px 0;
         }
 
     </style>
 </head>
-<body>
+<body data-theme="light">
+
+<!-- Animated Ambient Background -->
+<div class="ambient-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+
+<!-- SVG Gradients Definitions for Circular Gauges -->
+<svg style="width:0; height:0; position:absolute;" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="temp-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff0844" />
+      <stop offset="100%" stop-color="#ffb199" />
+    </linearGradient>
+    <linearGradient id="ph-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b026ff" />
+      <stop offset="100%" stop-color="#6510ff" />
+    </linearGradient>
+  </defs>
+</svg>
 
 <div class="grid-container dashboard-grid">
     <!-- Header -->
     <div class="header">
-        <div>
-            <h1>VERTICAL FARM <span style="font-size: 0.5em; color:var(--neon-purple);">OS</span></h1>
-            <div style="font-size: 0.8rem; color: #888; letter-spacing: 2px;">LIVE MONITORING SYSTEM</div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <h1><i class="fas fa-leaf" style="color: var(--color-green);"></i> GROW SMART <span style="font-size: 0.5em; color:var(--text-main);">OS</span></h1>
+            <div style="font-size: 0.9rem; color: var(--text-muted); letter-spacing: 3px; font-weight: 800; border-left: 2px solid var(--card-border); padding-left: 20px;">
+                <span class="live-indicator"></span> LIVE MONITORING
+            </div>
         </div>
-        <div style="text-align: right;">
-            <div id="clock" style="font-size: 2rem; font-weight: bold; font-family: 'Orbitron', sans-serif;">12:00:00</div>
-            <button onclick="toggleWorkflow()" style="background:none; border:1px solid var(--neon-blue); color:var(--neon-blue); padding:5px 15px; cursor:pointer; margin-top:5px; border-radius:5px;">VIEW WORKFLOW</button>
+        <div style="text-align: right; display: flex; align-items: center; gap: 30px;">
+            <div id="clock" style="font-size: 2.5rem; font-weight: 900; font-family: 'Orbitron', sans-serif; color: var(--text-main);">12:00:00</div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-outline" id="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="btn-outline" onclick="toggleWorkflow()"><i class="fas fa-project-diagram"></i> WORKFLOW</button>
+            </div>
         </div>
     </div>
 
     <!-- Left Column: Environment -->
-    <div class="card" style="grid-row: 2 / 4;">
-        <div class="label">AIR TEMPERATURE</div>
-        <div style="position:relative; width: 150px; height: 150px; margin: 20px 0;">
-            <svg width="150" height="150">
-                <circle stroke="#222" stroke-width="10" fill="transparent" r="60" cx="75" cy="75"/>
-                <circle id="temp-ring" stroke="#ff0055" stroke-width="10" fill="transparent" r="60" cx="75" cy="75"
-                        stroke-dasharray="377" stroke-dashoffset="100" class="progress-ring-circle"/>
+    <div class="card">
+        <div class="label"><i class="fas fa-temperature-half" style="color: var(--color-red);"></i> AIR TEMPERATURE</div>
+        <div style="position:relative; width: 190px; height: 190px; margin: 20px 0; z-index: 1;">
+            <svg width="190" height="190">
+                <circle stroke="var(--card-border)" stroke-width="14" fill="transparent" r="80" cx="95" cy="95" style="transition: stroke 0.5s ease;"/>
+                <circle id="temp-ring" stroke="url(#temp-grad)" stroke-width="14" fill="transparent" r="80" cx="95" cy="95"
+                        stroke-dasharray="502" stroke-dashoffset="150" class="progress-ring-circle"/>
             </svg>
-            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
-                <div class="value" id="val-temp" style="font-size: 2.5rem;">25</div>
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; width: 100%;">
+                <!-- Reduced Font Size for Temp Value inside circle -->
+                <div class="value val-temp" id="val-temp" style="font-size: 2.5rem;">25.0</div>
                 <div class="unit">°C</div>
             </div>
         </div>
         
-        <div class="label" style="margin-top: 30px;">HUMIDITY</div>
-        <div class="value" style="color:var(--neon-blue);"><span id="val-hum">60</span><span class="unit">%</span></div>
+        <div class="glass-divider"></div>
+
+        <div class="label"><i class="fas fa-cloud-showers-water" style="color: var(--color-blue);"></i> HUMIDITY</div>
+        <div class="value val-hum" style="font-size: 3.2rem;"><span id="val-hum">60</span><span class="unit">%</span></div>
     </div>
 
     <!-- Center: Main Status & AI -->
-    <div class="card" style="grid-column: 2 / 3;">
-        <div class="label">SYSTEM STATUS</div>
-        <div id="sys-status" class="value" style="color:var(--neon-green); font-size: 3rem; margin: 20px 0;">NORMAL</div>
-        <div style="width: 100%; border-top: 1px solid #333; margin: 20px 0;"></div>
-        
-        <div class="label">AI ANOMALY DETECTION</div>
-        <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
-            <div style="width: 10px; height: 10px; background: var(--neon-green); border-radius: 50%; box-shadow: 0 0 10px var(--neon-green);"></div>
-            <div style="font-family: 'Orbitron', sans-serif; font-size: 1.2rem;">MODEL RUNNING</div>
+    <div class="card" style="justify-content: space-evenly; background: linear-gradient(180deg, var(--panel-bg) 0%, rgba(255,255,255,0.2) 100%);">
+        <div style="text-align: center;">
+            <div class="label" style="justify-content: center;"><i class="fas fa-shield-heart" style="color: var(--color-green);"></i> SYSTEM STATUS</div>
+            <div id="sys-status" class="value" style="background: var(--grad-green); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 4.5rem; letter-spacing: 2px;">OPTIMAL</div>
         </div>
-        <div id="ai-msg" style="color: #666; margin-top: 10px;">No anomalies detected in last 24h.</div>
+        
+        <div class="glass-divider" style="width: 60%;"></div>
+        
+        <div style="text-align: center; background: var(--ai-box-bg); padding: 25px; border-radius: 20px; width: 85%; border: 1px solid var(--card-border); box-shadow: var(--shadow-soft);">
+            <div class="label" style="justify-content: center;"><i class="fas fa-microchip" style="color: var(--color-purple);"></i> ML ANOMALY ENGINE</div>
+            <div style="display: flex; gap: 12px; align-items: center; justify-content: center; margin-top: 15px;">
+                <div style="width: 16px; height: 16px; background: var(--grad-purple); border-radius: 50%; box-shadow: 0 0 15px var(--color-purple); animation: pulse 1.5s infinite;"></div>
+                <div style="font-family: 'Orbitron', sans-serif; font-size: 1.5rem; color: var(--text-main); font-weight: 900;">ANALYZING</div>
+            </div>
+            <div id="ai-msg" style="color: var(--text-muted); margin-top: 15px; font-weight: 600; font-size: 1.1rem;">Monitoring sensor array...</div>
+        </div>
     </div>
 
     <!-- Right Column: Water Chemistry -->
-    <div class="card" style="grid-row: 2 / 4;">
-        <div class="label">WATER PH</div>
-        <div style="position:relative; width: 150px; height: 150px; margin: 20px 0;">
-            <svg width="150" height="150">
-                <circle stroke="#222" stroke-width="10" fill="transparent" r="60" cx="75" cy="75"/>
-                <circle id="ph-ring" stroke="#bc13fe" stroke-width="10" fill="transparent" r="60" cx="75" cy="75"
-                        stroke-dasharray="377" stroke-dashoffset="200" class="progress-ring-circle"/>
+    <div class="card">
+        <div class="label"><i class="fas fa-vial" style="color: var(--color-purple);"></i> WATER PH LEVEL</div>
+        <div style="position:relative; width: 190px; height: 190px; margin: 20px 0; z-index: 1;">
+            <svg width="190" height="190">
+                <circle stroke="var(--card-border)" stroke-width="14" fill="transparent" r="80" cx="95" cy="95" style="transition: stroke 0.5s ease;"/>
+                <circle id="ph-ring" stroke="url(#ph-grad)" stroke-width="14" fill="transparent" r="80" cx="95" cy="95"
+                        stroke-dasharray="502" stroke-dashoffset="200" class="progress-ring-circle"/>
             </svg>
-            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
-                <div class="value" id="val-ph" style="font-size: 2.5rem;">6.0</div>
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; width: 100%;">
+                <!-- Reduced Font Size for pH Value inside circle -->
+                <div class="value val-ph" id="val-ph" style="font-size: 2.5rem;">6.00</div>
                 <div class="unit">pH</div>
             </div>
         </div>
 
-        <div class="label" style="margin-top: 30px;">NUTRIENT EC</div>
-        <div class="value" style="color:var(--neon-purple);"><span id="val-ec">1.2</span><span class="unit">mS</span></div>
+        <div class="glass-divider"></div>
+
+        <div class="label"><i class="fas fa-bolt" style="color: var(--color-cyan);"></i> NUTRIENT EC</div>
+        <div class="value val-ec" style="font-size: 3.2rem;"><span id="val-ec">1.20</span><span class="unit">mS/cm</span></div>
     </div>
 
-    <!-- Bottom Center: Actuators (Now with Embedded SVGs) -->
+    <!-- Bottom Center: Actuators (Expanded to match 8-Relay config functionality) -->
     <div class="actuators">
         <!-- Lights -->
-        <div class="device" id="dev-light" style="color: #f1c40f;">
-            <div class="icon-box">
-                <!-- SVG Lightbulb -->
-                <svg viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6A4.997 4.997 0 0 1 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></svg>
-            </div>
-            <div class="label">GROW LIGHTS</div>
+        <div class="device" id="dev-light">
+            <div class="icon-box"><i class="fas fa-sun"></i></div>
+            <div class="label">LIGHTS</div>
         </div>
         <!-- Pump -->
-        <div class="device" id="dev-pump" style="color: var(--neon-blue);">
-            <div class="icon-box">
-                <!-- SVG Water Drop -->
-                <svg viewBox="0 0 24 24"><path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.8 6 9.14 0 3.63-2.65 6.2-6 6.2z"/></svg>
-            </div>
-            <div class="label">IRRIGATION</div>
+        <div class="device bounce-anim" id="dev-pump">
+            <div class="icon-box"><i class="fas fa-water"></i></div>
+            <div class="label">PUMP</div>
         </div>
         <!-- Fan -->
-        <div class="device" id="dev-fan" style="color: var(--neon-green);">
-            <div class="icon-box">
-                <!-- SVG Fan -->
-                <svg viewBox="0 0 24 24"><path d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zM4 12c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8-8 3.58-8 8zm8.5-6l.8 2.5h2.5l-2.1 1.5.8 2.5-2-1.5-2 1.5.8-2.5-2.1-1.5h2.5z"/></svg>
-            </div>
-            <div class="label">AIR FAN</div>
+        <div class="device spin-anim" id="dev-fan">
+            <div class="icon-box"><i class="fas fa-fan"></i></div>
+            <div class="label">FANS</div>
         </div>
-        <!-- Doser -->
-        <div class="device" id="dev-dose" style="color: var(--neon-pink);">
-            <div class="icon-box">
-                <!-- SVG Flask -->
-                <svg viewBox="0 0 24 24"><path d="M19.66 18.53l-2.66-9.52V6h2V4H5v2h2v3.01l-2.66 9.52C3.62 20.9 5.37 22 7.03 22h9.94c1.66 0 3.41-1.1 2.69-3.47zM9 6h6v3.02L12 11 9 9.02V6zm-1.12 14l1.9-6.83L12 15l2.22-1.83 1.9 6.83H7.88z"/></svg>
-            </div>
-            <div class="label">pH DOSER</div>
+        <!-- pH Down -->
+        <div class="device pulse-anim" id="dev-ph-down">
+            <div class="icon-box"><i class="fas fa-arrow-down"></i></div>
+            <div class="label">PH DOWN</div>
+        </div>
+        <!-- pH Up -->
+        <div class="device pulse-anim" id="dev-ph-up">
+            <div class="icon-box"><i class="fas fa-arrow-up"></i></div>
+            <div class="label">PH UP</div>
+        </div>
+        <!-- Nutrients -->
+        <div class="device pulse-anim" id="dev-nutrients">
+            <div class="icon-box"><i class="fas fa-seedling"></i></div>
+            <div class="label">NUTRIENTS</div>
         </div>
     </div>
 
 </div>
 
 <!-- WORKFLOW OVERLAY -->
-<div id="workflow-modal">
-    <h2 style="font-family:'Orbitron', sans-serif; color:var(--neon-blue); margin-bottom:40px;">SYSTEM LOGIC FLOW</h2>
-    <div class="workflow-diagram">
-        <div class="wf-step" id="step-read">
-            <div style="font-size:2rem; margin-bottom:10px;">👁️</div>
-            READ SENSORS
+<div id="workflow-modal" class="workflow-overlay">
+    <h2 style="font-family:'Orbitron', sans-serif; color:var(--text-main); margin-bottom:50px; font-size: 3rem; text-shadow: 0 4px 10px rgba(0,0,0,0.1);"><i class="fas fa-cogs" style="color: var(--color-blue);"></i> SYSTEM LOGIC FLOW</h2>
+    <div style="display: flex; gap: 30px; align-items: center; flex-wrap: wrap; justify-content: center;">
+        <div class="wf-step card" id="step-read" style="width: 200px; text-align: center;">
+            <i class="fas fa-eye" style="font-size:3.5rem; margin-bottom:20px; color: var(--color-blue);"></i><br><strong style="color:var(--text-main); font-size: 1.1rem; letter-spacing: 1px;">READ SENSORS</strong>
         </div>
-        <div class="wf-arrow">→</div>
-        <div class="wf-step" id="step-safe">
-            <div style="font-size:2rem; margin-bottom:10px;">🛡️</div>
-            SAFETY CHECK
+        <div style="font-size: 3rem; color: var(--text-muted); opacity: 0.5;"><i class="fas fa-arrow-right"></i></div>
+        <div class="wf-step card" id="step-safe" style="width: 200px; text-align: center;">
+            <i class="fas fa-shield-alt" style="font-size:3.5rem; margin-bottom:20px; color: var(--color-orange);"></i><br><strong style="color:var(--text-main); font-size: 1.1rem; letter-spacing: 1px;">SAFETY CHECK</strong>
         </div>
-        <div class="wf-arrow">→</div>
-        <div class="wf-step" id="step-ai">
-            <div style="font-size:2rem; margin-bottom:10px;">🧠</div>
-            AI ANALYSIS
+        <div style="font-size: 3rem; color: var(--text-muted); opacity: 0.5;"><i class="fas fa-arrow-right"></i></div>
+        <div class="wf-step card" id="step-ai" style="width: 200px; text-align: center;">
+            <i class="fas fa-brain" style="font-size:3.5rem; margin-bottom:20px; color: var(--color-purple);"></i><br><strong style="color:var(--text-main); font-size: 1.1rem; letter-spacing: 1px;">AI ANALYSIS</strong>
         </div>
-        <div class="wf-arrow">→</div>
-        <div class="wf-step" id="step-act">
-            <div style="font-size:2rem; margin-bottom:10px;">⚙️</div>
-            CONTROL RELAYS
+        <div style="font-size: 3rem; color: var(--text-muted); opacity: 0.5;"><i class="fas fa-arrow-right"></i></div>
+        <div class="wf-step card" id="step-act" style="width: 200px; text-align: center;">
+            <i class="fas fa-sliders-h" style="font-size:3.5rem; margin-bottom:20px; color: var(--color-green);"></i><br><strong style="color:var(--text-main); font-size: 1.1rem; letter-spacing: 1px;">CONTROL RELAYS</strong>
         </div>
     </div>
-    <div style="margin-top: 20px; color: #888;">System loops every 2 seconds</div>
-    <button class="close-btn" onclick="toggleWorkflow()">CLOSE</button>
+    <div style="margin-top: 50px; color: var(--text-main); font-weight: 800; font-size: 1.3rem; background: var(--panel-bg); padding: 15px 30px; border-radius: 30px; box-shadow: var(--shadow-soft); border: 1px solid var(--card-border);"><i class="fas fa-sync fa-spin" style="margin-right: 15px; color: var(--color-blue);"></i>System loop executes every 2 seconds</div>
+    <button onclick="document.getElementById('workflow-modal').style.display='none'" style="margin-top: 40px; padding: 15px 50px; background: var(--grad-red); border: none; border-radius: 15px; color: white; font-size: 1.3rem; cursor: pointer; box-shadow: 0 10px 20px rgba(255, 8, 68, 0.3); font-weight: 900; transition: transform 0.3s;"><i class="fas fa-times"></i> CLOSE</button>
 </div>
 
 <script>
+    // --- DARK MODE LOGIC ---
+    let manualThemeOverride = false;
+
+    function setTheme(theme) {
+        document.body.setAttribute('data-theme', theme);
+        const toggleBtn = document.getElementById('theme-toggle');
+        if (theme === 'dark') {
+            toggleBtn.innerHTML = '<i class="fas fa-sun" style="color: var(--color-orange);"></i> LIGHT';
+        } else {
+            toggleBtn.innerHTML = '<i class="fas fa-moon" style="color: var(--color-purple);"></i> DARK';
+        }
+    }
+
+    function toggleTheme() {
+        manualThemeOverride = true;
+        const currentTheme = document.body.getAttribute('data-theme') || 'light';
+        setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    }
+
+    function checkAutoTheme() {
+        if (manualThemeOverride) return;
+        
+        const hour = new Date().getHours();
+        // Auto Dark Mode between 19:00 (7 PM) and 06:00 (6 AM)
+        if (hour >= 19 || hour < 6) {
+            if (document.body.getAttribute('data-theme') !== 'dark') {
+                setTheme('dark');
+            }
+        } else {
+            if (document.body.getAttribute('data-theme') !== 'light') {
+                setTheme('light');
+            }
+        }
+    }
+
     // --- WORKFLOW TOGGLE ---
     function toggleWorkflow() {
         const modal = document.getElementById('workflow-modal');
         const isFlex = modal.style.display === 'flex';
         modal.style.display = isFlex ? 'none' : 'flex';
         
-        if (!isFlex) { // Start animation when opening
+        if (!isFlex) { 
             const steps = ['step-read', 'step-safe', 'step-ai', 'step-act'];
             let i = 0;
             setInterval(() => {
-                document.querySelectorAll('.wf-step').forEach(el => el.classList.remove('active'));
-                document.getElementById(steps[i]).classList.add('active');
+                document.querySelectorAll('.wf-step').forEach(el => {
+                    el.style.transform = 'scale(1)';
+                    el.style.boxShadow = 'var(--shadow-soft)';
+                    el.style.borderColor = 'var(--card-border)';
+                });
+                const activeEl = document.getElementById(steps[i]);
+                activeEl.style.transform = 'scale(1.1)';
+                activeEl.style.boxShadow = '0 15px 35px rgba(0,0,0,0.2)';
+                
+                // Add specific glowing borders based on step
+                if(i===0) activeEl.style.borderColor = 'var(--color-blue)';
+                if(i===1) activeEl.style.borderColor = 'var(--color-orange)';
+                if(i===2) activeEl.style.borderColor = 'var(--color-purple)';
+                if(i===3) activeEl.style.borderColor = 'var(--color-green)';
+                
                 i = (i + 1) % steps.length;
-            }, 1000);
+            }, 1200);
         }
     }
 
-    // --- CLOCK ---
+    // --- CLOCK & TIMERS ---
+    checkAutoTheme(); // Run once on load
+    
     setInterval(() => {
         document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+        checkAutoTheme(); // Constantly check the auto-theme rule
     }, 1000);
 
     // --- CIRCLE GAUGE HELPER ---
@@ -363,36 +568,36 @@
         const circle = document.getElementById(id);
         const radius = circle.r.baseVal.value;
         const circumference = radius * 2 * Math.PI;
-        const offset = circumference - (value / max) * circumference;
+        const boundedValue = Math.max(0, Math.min(value, max));
+        const offset = circumference - (boundedValue / max) * circumference;
         circle.style.strokeDashoffset = offset;
     }
 
     // --- DATA UPDATE LOGIC ---
     async function updateDashboard() {
         try {
-            // Try to fetch real data
             const response = await fetch('dashboard.json');
             const data = await response.json();
             updateUI(data);
         } catch (e) {
-            // If fetch fails (or just opening file), run Simulation Mode
-            console.log("Running Simulation Mode");
-            const simData = simulateData();
-            updateUI(simData);
+            // Uncomment to run mock data if python isn't running
+            // const simData = simulateData();
+            // updateUI(simData);
         }
     }
 
     function simulateData() {
-        // Generate random realistic values
         return {
             temp: (24 + Math.random() * 2).toFixed(1),
             hum: (55 + Math.random() * 5).toFixed(0),
             ph: (5.8 + Math.random() * 0.4).toFixed(2),
-            ec: 1.2,
+            ec: (1.2 + Math.random() * 0.1).toFixed(2),
             safety: "SAFE",
             light_state: "ON",
             fan_state: Math.random() > 0.5 ? "ON" : "OFF",
-            pump_state: Math.random() > 0.8 ? "ON" : "OFF" // Pump mostly off
+            pump_state: Math.random() > 0.8 ? "ON" : "OFF",
+            activity: Math.random() > 0.8 ? "Dosing: pH Down" : "Monitoring",
+            ml: { prediction: "Systems nominal. Growth curve optimal." }
         };
     }
 
@@ -403,40 +608,53 @@
         document.getElementById('val-ph').innerText = data.ph;
         document.getElementById('val-ec').innerText = data.ec;
 
-        // Gauges
-        setProgress('temp-ring', data.temp, 50); // Max temp 50
-        setProgress('ph-ring', data.ph, 14);     // Max pH 14
+        // Update ML Message
+        if(data.ml && data.ml.prediction) {
+            document.getElementById('ai-msg').innerText = data.ml.prediction;
+        }
 
-        // Actuators
+        // Gauges (Max Temp 50C, Max pH 14)
+        setProgress('temp-ring', parseFloat(data.temp), 50); 
+        setProgress('ph-ring', parseFloat(data.ph), 14);     
+
+        // Actuators Updates (Synced with config.py functionality and activity status)
         setDeviceState('dev-light', data.light_state === "ON");
-        setDeviceState('dev-fan', data.fan_state === "ON", 'spin-anim');
-        setDeviceState('dev-pump', data.pump_state === "ON", 'pulse-anim');
+        setDeviceState('dev-fan', data.fan_state === "ON" || (data.activity && data.activity.includes("Cooling")));
+        setDeviceState('dev-pump', data.pump_state === "ON" || (data.activity && data.activity.includes("Irrigation")));
         
-        // Safety
+        // Detailed dosing status derived from the 'activity' string provided by vf_main.py
+        const act = data.activity || "";
+        setDeviceState('dev-ph-down', act.includes("pH Down"));
+        setDeviceState('dev-ph-up', act.includes("pH Up"));
+        setDeviceState('dev-nutrients', act.includes("Nutrient"));
+        
+        // Safety / Status
         const sys = document.getElementById('sys-status');
-        if (data.safety === "SAFE") {
-            sys.innerText = "NORMAL";
-            sys.style.color = "var(--neon-green)";
+        if (data.safety === "SAFE" || data.safety === "OK") {
+            sys.innerText = "OPTIMAL";
+            sys.style.background = "var(--grad-green)";
+            sys.style.webkitBackgroundClip = "text";
+            document.querySelector('#sys-status').previousElementSibling.querySelector('i').className = "fas fa-shield-check";
+            document.querySelector('#sys-status').previousElementSibling.querySelector('i').style.color = "var(--color-green)";
         } else {
-            sys.innerText = "ALERT";
-            sys.style.color = "var(--alert-red)";
+            sys.innerText = "ALERT!";
+            sys.style.background = "var(--grad-red)";
+            sys.style.webkitBackgroundClip = "text";
+            document.querySelector('#sys-status').previousElementSibling.querySelector('i').className = "fas fa-triangle-exclamation fa-fade";
+            document.querySelector('#sys-status').previousElementSibling.querySelector('i').style.color = "var(--color-red)";
         }
     }
 
-    function setDeviceState(id, isOn, animClass) {
+    function setDeviceState(id, isOn) {
         const el = document.getElementById(id);
-        const icon = el.querySelector('.icon-box');
-        
         if (isOn) {
             el.classList.add('on');
-            if (animClass) icon.classList.add(animClass);
         } else {
             el.classList.remove('on');
-            if (animClass) icon.classList.remove(animClass);
         }
     }
 
-    setInterval(updateDashboard, 1000);
+    setInterval(updateDashboard, 1500);
 
 </script>
 </body>

@@ -60,7 +60,7 @@ def start_web_server():
         def log_message(self, format, *args): pass
             
     try:
-        if not os.path.exists("stunning_dashboard.html"):
+        if not os.path.exists("gow.html"):
             print("! Warning: stunning_dashboard.html not found.")
             
         with socketserver.TCPServer(("", PORT), QuietHandler) as httpd:
@@ -107,7 +107,7 @@ if ML_AVAILABLE:
 server_thread = threading.Thread(target=start_web_server, daemon=True)
 server_thread.start()
 time.sleep(1)
-webbrowser.open("http://localhost:8000/stunning_dashboard.html")
+webbrowser.open("http://localhost:8000/gow.html")
 
 # --- LOGIC ---
 last_water_time = 0

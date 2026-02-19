@@ -1,1 +1,1 @@
-{"timestamp": "20:19:18", "temp": 25.0, "hum": 50.0, "ph": 6.0, "ec": 1.2, "light_state": "OFF", "fan_state": "OFF", "pump_state": "ON", "safety": "SAFE"}
+{"timestamp": "15:52:58", "temp": 25.0, "hum": 50.0, "ph": 6.0, "ec": 1.2, "light_state": "ON", "fan_state": "OFF", "pump_state": "OFF", "safety": "SAFE", "ml": {"health_score": 100, "status": "HEALTHY", "prediction": "All Systems Nominal", "trend": "Stable", "timestamp": 1771512778.9355452}}
