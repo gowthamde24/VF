@@ -24,10 +24,12 @@ This project is a fully automated control system for a vertical farm. It manages
 |------:|-----:|--------|----------|
 | 1 | 5 | Water Pump | Irrigation Cycle (5 min/hr) |
 | 2 | 6 | Grow Lights | Day/Night Cycle (06:00-20:00) |
-| 3 | 13 | Fan | Cooling (if Temp > 25°C) |
+| 3 | 13 | Fan1 | Cooling (if Temp > 25°C) |
 | 4 | 19 | pH Down Pump | Acid Dosing (if pH > 6.5) |
 | 5 | 26 | pH Up Pump | Base Dosing (if pH < 5.5) |
-| 6-8 | - | Expansion | Nutrient Dosing / Spares |
+| 6 | 16 | Nutrient_a | Vegetative Growth |
+| 7 | 20 | Nutrient_b | Bloom Growth |
+| 8 | 21 | Fan2 | Cooling (if Temp > 25°C) |
 
 ## 🚀 Installation Guide
 
@@ -62,11 +64,11 @@ pip install adafruit-circuitpython-bme280 adafruit-circuitpython-ads1x15 adafrui
 
 Copy the following files into the `vertical_farm` folder:
 
-- `main.py` (Master Logic)
+- `vf_main.py` (Master Logic)
 - `config.py` (Settings & Pins)
 - `ml_engine.py` (AI Anomaly Detector)
 - `diagnostics.py` (Testing Tool)
-- `farm_dashboard.html` (Live Web UI)
+- `stunning_dashboard.html` (Live Web UI)
 
 ## 🛠️ Usage
 
