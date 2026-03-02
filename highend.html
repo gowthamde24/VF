@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grow Smart OS - 4-Tier Architecture Diagram</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .diagram-container {
+            width: 100%;
+            max-width: 1050px;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .diagram-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #0f172a;
+        }
+
+        .diagram-subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 40px;
+        }
+
+        /* Layer Container */
+        .layer {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 35px 20px 20px;
+            position: relative;
+            background: #f8fafc;
+            margin-bottom: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .layer-1 { border-color: #86efac; background: #f0fdf4; } /* Green - Physical */
+        .layer-2 { border-color: #fcd34d; background: #fffbeb; } /* Amber - Perception */
+        .layer-3 { border-color: #93c5fd; background: #eff6ff; } /* Blue - Cyber */
+        .layer-4 { border-color: #c4b5fd; background: #f5f3ff; } /* Purple - App */
+
+        .layer-title {
+            position: absolute;
+            top: -14px;
+            left: 20px;
+            background: #ffffff;
+            padding: 4px 15px;
+            font-weight: 700;
+            font-size: 13px;
+            border-radius: 20px;
+            border: 2px solid;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .layer-1 .layer-title { border-color: #86efac; color: #166534; }
+        .layer-2 .layer-title { border-color: #fcd34d; color: #92400e; }
+        .layer-3 .layer-title { border-color: #93c5fd; color: #1e3a8a; }
+        .layer-4 .layer-title { border-color: #c4b5fd; color: #4c1d95; }
+
+        /* Block Nodes */
+        .node {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px 15px;
+            width: 260px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+        }
+
+        .node i {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .node-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 0;
+            color: #0f172a;
+        }
+
+        .node-code {
+            font-family: monospace;
+            background: #f1f5f9;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #ef4444;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        /* Specific Icon Colors */
+        .ic-app { color: #8b5cf6; }
+        .ic-cyber { color: #3b82f6; }
+        .ic-perc { color: #f59e0b; }
+        .ic-phys { color: #10b981; }
+
+        /* Biological Subject Highlight */
+        .bio-node {
+            border: 2px solid #10b981;
+            background: #ecfdf5;
+        }
+        .bio-node i { color: #ef4444; }
+        .bio-node .node-code { color: #047857; font-style: italic; background: #d1fae5; font-family: 'Inter', sans-serif; font-weight: 600;}
+
+        /* Flow Connectors */
+        .flow-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 60px;
+            position: relative;
+        }
+
+        .flow-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            width: 200px;
+        }
+
+        .flow-text {
+            font-size: 11px;
+            font-weight: 600;
+            color: #475569;
+            background: #fff;
+            padding: 4px 12px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            z-index: 1;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .arrow-down { margin-top: -10px; color: #94a3b8; font-size: 20px;}
+        .arrow-up { margin-bottom: -10px; color: #94a3b8; font-size: 20px;}
+        .arrow-dual { color: #94a3b8; font-size: 20px;}
+
+        .multi-flow {
+            display: flex;
+            gap: 150px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="diagram-container">
+    <div class="diagram-title">System Architecture: Grow Smart OS</div>
+    <div class="diagram-subtitle">4-Layer Structural Diagram for Intelligent Vertical Farming</div>
+
+    <!-- LAYER 4: APPLICATION -->
+    <div class="layer layer-4">
+        <div class="layer-title"><i class="fas fa-desktop"></i> Layer 4: Application Layer (HMI)</div>
+        
+        <div class="node">
+            <i class="fas fa-chart-line ic-app"></i>
+            <div class="node-title">Local Web Server</div>
+        </div>
+
+        <div class="node">
+            <i class="fas fa-user-shield ic-app"></i>
+            <div class="node-title">Kiosk-Mode Interface</div>
+        </div>
+    </div>
+
+    <!-- CONNECTOR 3 to 4 -->
+    <div class="flow-container">
+        <div class="multi-flow">
+            <div class="flow-line">
+                <i class="fas fa-arrows-alt-v arrow-dual"></i>
+                <div class="flow-text">Visibility & Manual Overrides</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LAYER 3: CYBER/LOGIC -->
+    <div class="layer layer-3">
+        <div class="layer-title"><i class="fas fa-server"></i> Layer 3: Cyber/Logic Layer (The "Thick Edge")</div>
+        
+        <div class="node">
+            <i class="fas fa-microchip ic-cyber"></i>
+            <div class="node-title">Data Acquisition Block</div>
+        </div>
+
+        <div class="node">
+            <i class="fas fa-brain ic-cyber"></i>
+            <div class="node-title">ML Engine</div>
+        </div>
+
+        <div class="node">
+            <i class="fas fa-code-branch ic-cyber"></i>
+            <div class="node-title">Decision Logic</div>
+        </div>
+    </div>
+
+    <!-- CONNECTOR 2 to 3 -->
+    <div class="flow-container">
+        <div class="multi-flow">
+            <div class="flow-line">
+                <i class="fas fa-long-arrow-alt-down arrow-down"></i>
+                <div class="flow-text">Actuation Commands</div>
+            </div>
+            <div class="flow-line">
+                <i class="fas fa-long-arrow-alt-up arrow-up"></i>
+                <div class="flow-text">Digitized Sensor Data</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LAYER 2: PERCEPTION & ACTUATION -->
+    <div class="layer layer-2">
+        <div class="layer-title"><i class="fas fa-microchip"></i> Layer 2: Perception & Actuation Layer</div>
+        
+        <div class="node">
+            <i class="fas fa-satellite-dish ic-perc"></i>
+            <div class="node-title">Sensors</div>
+        </div>
+
+        <div class="node">
+            <i class="fas fa-shield-alt ic-perc"></i>
+            <div class="node-title">Relay Isolation Plane</div>
+        </div>
+
+        <div class="node">
+            <i class="fas fa-cogs ic-perc"></i>
+            <div class="node-title">Actuators</div>
+        </div>
+    </div>
+
+    <!-- CONNECTOR 1 to 2 -->
+    <div class="flow-container">
+        <div class="multi-flow">
+            <div class="flow-line">
+                <i class="fas fa-long-arrow-alt-down arrow-down"></i>
+                <div class="flow-text">Physical Execution</div>
+            </div>
+            <div class="flow-line">
+                <i class="fas fa-long-arrow-alt-up arrow-up"></i>
+                <div class="flow-text">Environmental Sampling</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LAYER 1: PHYSICAL -->
+    <div class="layer layer-1">
+        <div class="layer-title"><i class="fas fa-leaf"></i> Layer 1: Physical Layer (The Plant & Hydraulics)</div>
+        
+        <div class="node">
+            <i class="fas fa-water ic-phys"></i>
+            <div class="node-title">Hydraulic Loop</div>
+        </div>
+
+        <div class="node bio-node">
+            <i class="fas fa-pepper-hot"></i>
+            <div class="node-title">Biological Assets</div>
+            <div class="node-code">Capsicum annuum (Chili)</div>
+        </div>
+
+        <div class="node">
+            <i class="fas fa-temperature-high ic-phys"></i>
+            <div class="node-title">Physical Dynamics</div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
