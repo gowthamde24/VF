@@ -8,7 +8,7 @@
     
     <style>
         :root {
-            var(--bg-base): #e0eaf5;
+            --bg-base: #e0eaf5;
             --panel-bg: rgba(255, 255, 255, 0.65);
             --header-bg: rgba(255, 255, 255, 0.85);
             --card-border: rgba(255, 255, 255, 0.6);
@@ -106,7 +106,7 @@
         }
         .label i { font-size: 1.5rem; }
 
-        .value { font-family: 'Orbitron', sans-serif; font-size: 3.2rem; font-weight: 900; z-index: 1; }
+        .value { font-family: 'Orbitron', sans-serif; font-size: 3.2rem; font-weight: 900; z-index: 1; text-align: center; }
         .val-temp { background: var(--grad-red); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .val-hum { background: var(--grad-blue); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .val-ph { background: var(--grad-purple); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -230,6 +230,7 @@
         <div class="value val-hum" style="font-size: 3.2rem;"><span id="val-hum">60</span><span class="unit">%</span></div>
     </div>
 
+    <!-- UPDATED: System Health Panel instead of ML Engine -->
     <div class="card" style="justify-content: space-evenly; background: linear-gradient(180deg, var(--panel-bg) 0%, rgba(255,255,255,0.2) 100%);">
         <div style="text-align: center;">
             <div class="label" style="justify-content: center;"><i class="fas fa-shield-heart" style="color: var(--color-green);"></i> SYSTEM STATUS</div>
@@ -239,12 +240,12 @@
         <div class="glass-divider" style="width: 60%;"></div>
         
         <div style="text-align: center; background: var(--ai-box-bg); padding: 25px; border-radius: 20px; width: 85%; border: 1px solid var(--card-border); box-shadow: var(--shadow-soft);">
-            <div class="label" style="justify-content: center;"><i class="fas fa-microchip" style="color: var(--color-purple);"></i> ML ANOMALY ENGINE</div>
+            <div class="label" style="justify-content: center;"><i class="fas fa-shield-halved" style="color: var(--color-blue);"></i> SYSTEM HEALTH MONITOR</div>
             <div style="display: flex; gap: 12px; align-items: center; justify-content: center; margin-top: 15px;">
-                <div style="width: 16px; height: 16px; background: var(--grad-purple); border-radius: 50%; box-shadow: 0 0 15px var(--color-purple); animation: pulse 1.5s infinite;"></div>
-                <div style="font-family: 'Orbitron', sans-serif; font-size: 1.5rem; color: var(--text-main); font-weight: 900;">ANALYZING</div>
+                <div id="monitoring-pulse" style="width: 16px; height: 16px; background: var(--grad-green); border-radius: 50%; box-shadow: 0 0 15px var(--color-green); animation: pulse 1.5s infinite;"></div>
+                <div id="monitoring-text" style="font-family: 'Orbitron', sans-serif; font-size: 1.5rem; color: var(--text-main); font-weight: 900;">PROTECTING</div>
             </div>
-            <div id="ai-msg" style="color: var(--text-muted); margin-top: 15px; font-weight: 600; font-size: 1.1rem;">Monitoring sensor array...</div>
+            <div id="ai-msg" style="color: var(--text-muted); margin-top: 15px; font-weight: 600; font-size: 1.1rem; min-height: 2.2rem;">Rule-based limits active...</div>
         </div>
     </div>
 
@@ -284,6 +285,7 @@
 
 </div>
 
+<!-- UPDATED: Workflow Modal (AI replaced with Fail-Safe Check) -->
 <div id="workflow-modal" class="workflow-overlay">
     <h2 style="font-family:'Orbitron', sans-serif; color:var(--text-main); margin-bottom:50px; font-size: 3rem; text-shadow: 0 4px 10px rgba(0,0,0,0.1);"><i class="fas fa-cogs" style="color: var(--color-blue);"></i> SYSTEM LOGIC FLOW</h2>
     <div style="display: flex; gap: 30px; align-items: center; flex-wrap: wrap; justify-content: center;">
@@ -296,7 +298,7 @@
         </div>
         <div style="font-size: 3rem; color: var(--text-muted); opacity: 0.5;"><i class="fas fa-arrow-right"></i></div>
         <div class="wf-step card" id="step-ai" style="width: 200px; text-align: center;">
-            <i class="fas fa-brain" style="font-size:3.5rem; margin-bottom:20px; color: var(--color-purple);"></i><br><strong style="color:var(--text-main); font-size: 1.1rem; letter-spacing: 1px;">AI ANALYSIS</strong>
+            <i class="fas fa-user-shield" style="font-size:3.5rem; margin-bottom:20px; color: var(--color-purple);"></i><br><strong style="color:var(--text-main); font-size: 1.1rem; letter-spacing: 1px;">FAIL-SAFE EVAL</strong>
         </div>
         <div style="font-size: 3rem; color: var(--text-muted); opacity: 0.5;"><i class="fas fa-arrow-right"></i></div>
         <div class="wf-step card" id="step-act" style="width: 200px; text-align: center;">
@@ -376,7 +378,8 @@
 
     async function updateDashboard() {
         try {
-            const response = await fetch('dashboard.json');
+            // Added timestamp to URL to prevent browser caching the json file
+            const response = await fetch('dashboard.json?t=' + new Date().getTime());
             const data = await response.json();
             updateUI(data);
         } catch (e) {}
@@ -387,8 +390,6 @@
         document.getElementById('val-hum').innerText = data.hum;
         document.getElementById('val-ph').innerText = data.ph;
         document.getElementById('val-ec').innerText = data.ec;
-        
-        // NEW: Update Water Level (Fallback to "--" if no data yet)
         document.getElementById('val-wl').innerText = data.water_level || "--";
 
         if(data.ml && data.ml.prediction) {
@@ -407,19 +408,47 @@
         setDeviceState('dev-ph-up', act.includes("pH Up"));
         setDeviceState('dev-nutrients', act.includes("Nutrient"));
         
+        // UPDATED: Interpret Python Fail-Safe Status ("OPTIMAL", "WARNING", "CRITICAL", "STARTUP")
         const sys = document.getElementById('sys-status');
-        if (data.safety === "SAFE" || data.safety === "OK") {
-            sys.innerText = "OPTIMAL";
+        const statusIcon = sys.previousElementSibling.querySelector('i');
+        const pulseOrb = document.getElementById('monitoring-pulse');
+        const pulseText = document.getElementById('monitoring-text');
+
+        const sysStatus = (data.ml && data.ml.status) ? data.ml.status : (data.safety === "OK" || data.safety === "SAFE" ? "OPTIMAL" : "CRITICAL");
+        sys.innerText = sysStatus;
+        
+        if (sysStatus === "OPTIMAL") {
             sys.style.background = "var(--grad-green)";
+            pulseOrb.style.background = "var(--grad-green)";
+            pulseOrb.style.boxShadow = "0 0 15px var(--color-green)";
+            pulseText.innerText = "PROTECTING";
             sys.style.webkitBackgroundClip = "text";
-            document.querySelector('#sys-status').previousElementSibling.querySelector('i').className = "fas fa-shield-check";
-            document.querySelector('#sys-status').previousElementSibling.querySelector('i').style.color = "var(--color-green)";
-        } else {
-            sys.innerText = "ALERT!";
+            statusIcon.className = "fas fa-shield-check";
+            statusIcon.style.color = "var(--color-green)";
+        } else if (sysStatus === "WARNING") {
+            sys.style.background = "var(--grad-orange)";
+            pulseOrb.style.background = "var(--grad-orange)";
+            pulseOrb.style.boxShadow = "0 0 15px var(--color-orange)";
+            pulseText.innerText = "WARNING";
+            sys.style.webkitBackgroundClip = "text";
+            statusIcon.className = "fas fa-triangle-exclamation";
+            statusIcon.style.color = "var(--color-orange)";
+        } else if (sysStatus === "CRITICAL") {
             sys.style.background = "var(--grad-red)";
+            pulseOrb.style.background = "var(--grad-red)";
+            pulseOrb.style.boxShadow = "0 0 15px var(--color-red)";
+            pulseText.innerText = "LOCKED";
             sys.style.webkitBackgroundClip = "text";
-            document.querySelector('#sys-status').previousElementSibling.querySelector('i').className = "fas fa-triangle-exclamation fa-fade";
-            document.querySelector('#sys-status').previousElementSibling.querySelector('i').style.color = "var(--color-red)";
+            statusIcon.className = "fas fa-skull-crossbones fa-fade";
+            statusIcon.style.color = "var(--color-red)";
+        } else if (sysStatus === "STARTUP") {
+            sys.style.background = "var(--grad-blue)";
+            pulseOrb.style.background = "var(--grad-blue)";
+            pulseOrb.style.boxShadow = "0 0 15px var(--color-blue)";
+            pulseText.innerText = "STABILIZING";
+            sys.style.webkitBackgroundClip = "text";
+            statusIcon.className = "fas fa-spinner fa-spin";
+            statusIcon.style.color = "var(--color-blue)";
         }
     }
 
