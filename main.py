@@ -66,7 +66,7 @@ last_water_time = time.time()
 last_dose_time = 0
 is_watering = False
 water_start_time = 0
-
+fan_active = False
 consecutive_ph_doses = 0
 consecutive_ec_doses = 0
 
@@ -141,7 +141,7 @@ def log_data_to_csv(temp, hum, ph, ec, water_lvl, light_s, fan_s, pump_s, safety
 
 def run_control_loop():
     global last_water_time, last_dose_time, is_watering, water_start_time
-    global consecutive_ph_doses, consecutive_ec_doses
+    global consecutive_ph_doses, consecutive_ec_doses, fan_active
     
     # --- 1. READ SENSORS ---
     t, h = (25.0, 50.0)
@@ -151,12 +151,11 @@ def run_control_loop():
     
     ph_val = 6.0 
     if ph_chan:
-        # --- NEW: Oversampling Filter for pH Stability ---
-        # Take 10 rapid readings to smooth out electrical noise
+        # Oversampling Filter for pH Stability
         ph_voltages = []
         for _ in range(10):
             ph_voltages.append(ph_chan.voltage)
-            time.sleep(0.02) # 20ms pause between samples
+            time.sleep(0.02)
         
         avg_v = sum(ph_voltages) / len(ph_voltages)
         ph_val = round((config.PH_SLOPE * avg_v) + config.PH_INTERCEPT, 2)
@@ -164,7 +163,7 @@ def run_control_loop():
 
     ec_val = 1.2 
     if ec_chan:
-        # --- NEW: Oversampling Filter for EC Stability ---
+        # Oversampling Filter for EC Stability
         ec_voltages = []
         for _ in range(10):
             ec_voltages.append(ec_chan.voltage)
@@ -202,8 +201,13 @@ def run_control_loop():
     else:
         GPIO.output(config.RELAYS['light'], GPIO.HIGH)
 
-    # --- 4. FANS ---
-    if t > config.TARGET_TEMP or h > config.TARGET_HUMIDITY:
+    # --- 4. FANS (With Hysteresis Deadband) ---
+    if t > (config.TARGET_TEMP + config.TEMP_TOLERANCE) or h > (config.TARGET_HUMIDITY + config.HUM_TOLERANCE):
+        fan_active = True
+    elif t <= config.TARGET_TEMP and h <= config.TARGET_HUMIDITY:
+        fan_active = False
+
+    if fan_active:
         GPIO.output(config.RELAYS['fan_1'], GPIO.LOW)
         GPIO.output(config.RELAYS['fan_2'], GPIO.LOW)
         fan_state = "ON"

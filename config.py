@@ -4,14 +4,14 @@
 
 # --- GPIO PIN MAPPING (BCM Mode) ---
 RELAYS = {
-    'water_pump': 23,   # Relay 1: Main recirculation pump
-    'light': 5,         # Relay 2: LED Grow Lights
-    'fan_1': 19,        # Relay 3: Intake/Cooling Fan
-    'ph_down': 13,      # Relay 4: Peristaltic Pump (Acid)
+    'water_pump': 5,    # Relay 1: Main recirculation pump
+    'light': 6,         # Relay 2: LED Grow Lights
+    'fan_1': 13,        # Relay 3: Intake/Cooling Fan
+    'ph_down': 19,      # Relay 4: Peristaltic Pump (Acid)
     'ph_up': 26,        # Relay 5: Peristaltic Pump (Base)
-    'nutrient_a': 16,   # Relay 6: Peristaltic Pump (FloraMicro)
+    'nutrient_a': 21,   # Relay 6: Peristaltic Pump (FloraMicro)
     'nutrient_b': 20,   # Relay 7: Peristaltic Pump (FloraBloom)
-    'fan_2': 24         # Relay 8: Exhaust Fan
+    'fan_2': 16         # Relay 8: Exhaust Fan
 }
 
 # --- I2C ADDRESSES ---
@@ -39,8 +39,10 @@ PUMP_MIX_TIME = 150         # Seconds to actively run main pump after dosing to 
 DOSE_WAIT_TIME = 900        # 15 Minutes total wait for chemical settling after ANY dose
 
 # --- OPTIMAL TARGETS (Lettuce + Fenugreek Polyculture) ---
-TARGET_TEMP = 23.0          # Turn fans on if air temp exceeds this
-TARGET_HUMIDITY = 65.0      # Turn fans on if humidity exceeds this
+TARGET_TEMP = 22.0          # The ideal cooled temperature (Lower Limit 'A')
+TEMP_TOLERANCE = 2.0        # Drift allowed before fans turn on (Upper Limit 'B' = 24.0C)
+TARGET_HUMIDITY = 60.0      # The ideal humidity 
+HUM_TOLERANCE = 5.0         # Drift allowed before fans turn on (Max = 65.0%)
 LIGHT_START_HOUR = 6        # Hour to turn lights ON (24h format)
 LIGHT_END_HOUR = 22         # Hour to turn lights OFF (24h format)
 TARGET_PH = 6.2             # Polyculture Sweet Spot
