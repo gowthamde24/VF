@@ -332,11 +332,9 @@ import threading
 import http.server
 import socketserver
 import os
-import csv
 from datetime import datetime
 import config
 
-# --- NATIVE RASPBERRY PI IMPORTS ---
 import RPi.GPIO as GPIO
 import board
 import busio
@@ -344,109 +342,81 @@ import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 from adafruit_bme280 import basic as adafruit_bme280
 
-# --- WEB SERVER LOGIC ---
+# --- WEB SERVER ---
 def start_web_server():
     PORT = 8000
     class QuietHandler(http.server.SimpleHTTPRequestHandler):
         def log_message(self, format, *args): pass
     try:
         with socketserver.TCPServer(("", PORT), QuietHandler) as httpd:
-            print(f"-> Web Server Running: http://localhost:{PORT}")
             httpd.serve_forever()
-    except OSError: pass
+    except: pass
 
 # --- SETUP ---
-print("System Booting (Confirmed Logic: Water=HIGH)...")
-
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
-# Setup Relays
 for name, pin in config.RELAYS.items():
-    GPIO.setup(pin, GPIO.OUT)
-    GPIO.output(pin, GPIO.HIGH)
+    GPIO.setup(pin, GPIO.OUT, initial=GPIO.HIGH)
 
-# --- CORRECTED DIGITAL SETUP ---
-# We use PUD_DOWN because your sensor sends 0V (LOW) when empty
 GPIO.setup(config.WATER_LEVEL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 i2c = busio.I2C(board.SCL, board.SDA)
+bme280, ph_chan, ec_chan = None, None, None
 
-bme280 = None
-try:
-    bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=config.I2C_ADDR_BME280)
-except: print("! BME280 Error")
+def init_hardware():
+    global bme280, ph_chan, ec_chan
+    try: bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=config.I2C_ADDR_BME280)
+    except: print("! BME Error")
+    try:
+        ads = ADS.ADS1115(i2c, address=config.I2C_ADDR_ADS1115)
+        # Using module constants ADS.P0 and ADS.P1
+        ph_chan = AnalogIn(ads, ADS.P0)
+        ec_chan = AnalogIn(ads, ADS.P1)
+    except: print("! ADS Error")
 
-ads, ph_chan, ec_chan = None, None, None
-try:
-    ads = ADS.ADS1115(i2c, address=config.I2C_ADDR_ADS1115)
-    ph_chan = AnalogIn(ads, ADS.P0, ADS.P3) # Differential Pair
-    ec_chan = AnalogIn(ads, config.CHAN_EC)
-except: print("! ADS1115 Error")
-
+init_hardware()
 threading.Thread(target=start_web_server, daemon=True).start()
 
-# --- STATE VARIABLES ---
+# --- STATE ---
 system_start_time = time.time()
 last_water_time = time.time()
-last_dose_time = 0
 is_watering = False
 water_start_time = 0
-fan_active = False
-
-def update_dashboard_file(temp, hum, ph, ec, water_lvl, light_s, fan_s, pump_s, safety_s, activity_s):
-    data = {
-        "timestamp": datetime.now().strftime('%H:%M:%S'),
-        "temp": temp, "hum": hum, "ph": ph, "ec": ec, "water_level": water_lvl, 
-        "light_state": light_s, "fan_state": fan_s, "pump_state": pump_s,
-        "safety": safety_s, "activity": activity_s,
-        "ml": {"health_score": 100, "status": safety_s, "prediction": activity_s} 
-    }
-    try:
-        with open("dashboard.json", "w") as f:
-            json.dump(data, f)
-    except: pass
 
 def run_control_loop():
-    global last_water_time, last_dose_time, is_watering, water_start_time, fan_active
+    global last_water_time, is_watering, water_start_time
     
-    # 1. Read Sensors
-    t, h = (23.0, 55.0)
+    t, h = (22.0, 50.0)
     if bme280:
-        t, h = round(bme280.temperature, 1), round(bme280.relative_humidity, 0)
+        try: t, h = round(bme280.temperature, 1), round(bme280.relative_humidity, 0)
+        except: pass
     
-    # --- FINAL WATER LOGIC ---
-    # Your sensor sends HIGH (3.3V) when water is detected (LED RED)
     water_ok = (GPIO.input(config.WATER_LEVEL_PIN) == GPIO.HIGH)
-    water_label = "FULL" if water_ok else "EMPTY"
-
+    
     ph_val = 6.2
     if ph_chan:
-        vols = []
-        for _ in range(50):
-            vols.append(ph_chan.voltage)
-            time.sleep(0.01)
-        vols.sort()
-        avg_v = sum(vols[10:-10]) / 30
-        ph_val = round((config.PH_SLOPE * avg_v) + config.PH_INTERCEPT, 2)
-
+        try:
+            # 100-sample software smoothing
+            vols = [ph_chan.voltage for _ in range(100)]
+            vols.sort()
+            avg_v = sum(vols[20:-20]) / 60
+            ph_val = round((config.PH_SLOPE * avg_v) + config.PH_INTERCEPT, 2)
+        except: ph_val = -1.0
+    
     ec_val = 1.2
     if ec_chan:
-        ec_val = round(ec_chan.voltage * config.EC_MULTIPLIER, 2)
+        try: ec_val = round(ec_chan.voltage * config.EC_MULTIPLIER, 2)
+        except: ec_val = -1.0
 
     now = datetime.now()
     cur_time = time.time()
-    
-    # 2. Control Logic
-    light_state = "ON" if (config.LIGHT_START_HOUR <= now.hour < config.LIGHT_END_HOUR) else "OFF"
-    GPIO.output(config.RELAYS['light'], GPIO.LOW if light_state == "ON" else GPIO.HIGH)
 
-    if t > (config.TARGET_TEMP + config.TEMP_TOLERANCE): fan_active = True
-    elif t <= config.TARGET_TEMP: fan_active = False
-    GPIO.output(config.RELAYS['fan_1'], GPIO.LOW if fan_active else GPIO.HIGH)
-    GPIO.output(config.RELAYS['fan_2'], GPIO.LOW if fan_active else GPIO.HIGH)
+    # Control Logic
+    fan_on = t > (config.TARGET_TEMP + config.TEMP_TOLERANCE)
+    GPIO.output(config.RELAYS['fan_1'], GPIO.LOW if fan_on else GPIO.HIGH)
+    GPIO.output(config.RELAYS['fan_2'], GPIO.LOW if fan_on else GPIO.HIGH)
 
-    # 3. Irrigation Safety (Only pump if there is water!)
     pump_state = "OFF"
     if water_ok:
         if not is_watering and (cur_time - last_water_time > config.WATER_INTERVAL):
@@ -457,12 +427,21 @@ def run_control_loop():
             GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
         if is_watering: pump_state = "ON"
     else:
-        GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH) # Emergency stop if empty
+        GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
         is_watering = False
 
-    # 4. Telemetry Update
-    update_dashboard_file(t, h, ph_val, ec_val, water_label, light_state, "ON" if fan_active else "OFF", pump_state, "OK" if water_ok else "CRITICAL", "Monitoring")
-    print(f"[{now.strftime('%H:%M:%S')}] pH:{ph_val} | EC:{ec_val} | Water:{water_label}      ", end='\r')
+    # Save
+    data = {
+        "timestamp": now.strftime('%H:%M:%S'),
+        "temp": t, "hum": h, "ph": ph_val, "ec": ec_val, 
+        "water_level": "100" if water_ok else "10",
+        "fan_state": "ON" if fan_on else "OFF",
+        "pump_state": pump_state,
+        "safety": "OK" if water_ok else "CRITICAL",
+        "activity": "Monitoring"
+    }
+    with open("dashboard.json", "w") as f: json.dump(data, f)
+    print(f"[{now.strftime('%H:%M:%S')}] pH:{ph_val} | EC:{ec_val} | Water:{'OK' if water_ok else 'LOW'}      ", end='\r')
 
 try:
     while True:
