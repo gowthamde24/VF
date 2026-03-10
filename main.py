@@ -349,16 +349,14 @@ def start_web_server():
     PORT = 8000
     class QuietHandler(http.server.SimpleHTTPRequestHandler):
         def log_message(self, format, *args): pass
-            
     try:
         with socketserver.TCPServer(("", PORT), QuietHandler) as httpd:
             print(f"-> Web Server Running: http://localhost:{PORT}")
             httpd.serve_forever()
-    except OSError:
-        pass
+    except OSError: pass
 
 # --- SETUP ---
-print("System Booting (Digital Water Level + Differential pH Mode)...")
+print("System Booting (Confirmed Logic: Water=HIGH)...")
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
@@ -366,29 +364,25 @@ GPIO.setwarnings(False)
 # Setup Relays
 for name, pin in config.RELAYS.items():
     GPIO.setup(pin, GPIO.OUT)
-    GPIO.output(pin, GPIO.HIGH) # HIGH is OFF
+    GPIO.output(pin, GPIO.HIGH)
 
-# Setup Digital Water Level Sensor
-GPIO.setup(config.WATER_LEVEL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+# --- CORRECTED DIGITAL SETUP ---
+# We use PUD_DOWN because your sensor sends 0V (LOW) when empty
+GPIO.setup(config.WATER_LEVEL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 i2c = busio.I2C(board.SCL, board.SDA)
 
 bme280 = None
 try:
     bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=config.I2C_ADDR_BME280)
-    print("-> Climate Sensor connected.")
-except Exception as e:
-    print(f"! Climate Sensor Error: {e}")
+except: print("! BME280 Error")
 
 ads, ph_chan, ec_chan = None, None, None
 try:
     ads = ADS.ADS1115(i2c, address=config.I2C_ADDR_ADS1115)
-    # --- DIFFERENTIAL EMI FIX ---
-    ph_chan = AnalogIn(ads, ADS.P0, ADS.P3)
+    ph_chan = AnalogIn(ads, ADS.P0, ADS.P3) # Differential Pair
     ec_chan = AnalogIn(ads, config.CHAN_EC)
-    print("-> Chemistry ADC connected (Differential Mode A0-A3).")
-except Exception as e:
-    print(f"! ADC Analog Error: {e}")
+except: print("! ADS1115 Error")
 
 threading.Thread(target=start_web_server, daemon=True).start()
 
@@ -399,232 +393,80 @@ last_dose_time = 0
 is_watering = False
 water_start_time = 0
 fan_active = False
-consecutive_ph_doses = 0
-consecutive_ec_doses = 0
 
-def evaluate_system_health(t, ph, ec, water_ok):
-    """Evaluates system health based on bounds and digital water level"""
-    health_score = 100
-    status = "OPTIMAL"
-    prediction = "Rule-Based System Active"
-    safe_mode = False
-
-    # 1. Water Level Critical Fail-Safe
-    if not water_ok:
-        health_score = 20
-        status = "CRITICAL"
-        prediction = "FAIL-SAFE: Reservoir Empty. Pumps Disabled."
-        safe_mode = True
-
-    # 2. Broken Sensor Fail-Safe
-    elif ph < config.PH_CRITICAL_LOW or ph > config.PH_CRITICAL_HIGH:
-        health_score = 10
-        status = "CRITICAL"
-        prediction = "FAIL-SAFE: pH Sensor Error. Chemical Pumps DISABLED."
-        safe_mode = True
-    elif ec <= config.EC_CRITICAL_LOW or ec > config.EC_CRITICAL_HIGH:
-        health_score = 10
-        status = "CRITICAL"
-        prediction = "FAIL-SAFE: EC Sensor Error. Nutrient Pumps DISABLED."
-        safe_mode = True
-        
-    # 3. Thermal Fail-Safe
-    elif t > config.CRITICAL_TEMP_LIMIT:
-        health_score = 40
-        status = "WARNING"
-        prediction = f"FAIL-SAFE: Temp > {config.CRITICAL_TEMP_LIMIT}C. Overheating Risk."
-        safe_mode = True
-
-    return safe_mode, {"health_score": health_score, "status": status, "prediction": prediction}
-
-
-def update_dashboard_file(temp, hum, ph, ec, water_lvl, light_s, fan_s, pump_s, safety_s, activity_s, sys_health):
+def update_dashboard_file(temp, hum, ph, ec, water_lvl, light_s, fan_s, pump_s, safety_s, activity_s):
     data = {
         "timestamp": datetime.now().strftime('%H:%M:%S'),
         "temp": temp, "hum": hum, "ph": ph, "ec": ec, "water_level": water_lvl, 
         "light_state": light_s, "fan_state": fan_s, "pump_state": pump_s,
         "safety": safety_s, "activity": activity_s,
-        "ml": sys_health 
+        "ml": {"health_score": 100, "status": safety_s, "prediction": activity_s} 
     }
     try:
         with open("dashboard.json", "w") as f:
             json.dump(data, f)
     except: pass
 
-def log_data_to_csv(temp, hum, ph, ec, water_lvl, light_s, fan_s, pump_s, safety_s, activity_s, sys_health):
-    file_name = "system_log.csv"
-    file_exists = os.path.isfile(file_name)
-    pred = sys_health["prediction"]
-    try:
-        with open(file_name, mode='a', newline='') as file:
-            writer = csv.writer(file)
-            if not file_exists:
-                writer.writerow(['Timestamp', 'Temp_C', 'Humidity_%', 'pH', 'EC', 'Water_Level', 'Light', 'Fans', 'Pump', 'Safety', 'Activity', 'System_Message'])
-            writer.writerow([
-                datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                temp, hum, ph, ec, water_lvl, light_s, fan_s, pump_s, safety_s, activity_s, pred
-            ])
-    except: pass
-
 def run_control_loop():
-    global last_water_time, last_dose_time, is_watering, water_start_time
-    global consecutive_ph_doses, consecutive_ec_doses, fan_active
+    global last_water_time, last_dose_time, is_watering, water_start_time, fan_active
     
-    # --- 1. READ SENSORS ---
-    t, h = (25.0, 50.0)
-    if bme280: 
-        t = round(bme280.temperature, 1)
-        h = round(bme280.relative_humidity, 0)
+    # 1. Read Sensors
+    t, h = (23.0, 55.0)
+    if bme280:
+        t, h = round(bme280.temperature, 1), round(bme280.relative_humidity, 0)
     
-    # Digital Water Level Read (0 = Detected, 1 = Empty)
-    water_ok = (GPIO.input(config.WATER_LEVEL_PIN) == GPIO.LOW)
-    water_label = "FULL" if water_ok else "LOW"
+    # --- FINAL WATER LOGIC ---
+    # Your sensor sends HIGH (3.3V) when water is detected (LED RED)
+    water_ok = (GPIO.input(config.WATER_LEVEL_PIN) == GPIO.HIGH)
+    water_label = "FULL" if water_ok else "EMPTY"
 
-    ph_val = 6.0 
+    ph_val = 6.2
     if ph_chan:
-        # Aggressive Oversampling + Outlier removal for Differential Mode
-        ph_voltages = []
+        vols = []
         for _ in range(50):
-            ph_voltages.append(ph_chan.voltage)
+            vols.append(ph_chan.voltage)
             time.sleep(0.01)
-        ph_voltages.sort()
-        stable_v = ph_voltages[10:-10] # Remove 10 highest and 10 lowest
-        avg_v = sum(stable_v) / len(stable_v)
+        vols.sort()
+        avg_v = sum(vols[10:-10]) / 30
         ph_val = round((config.PH_SLOPE * avg_v) + config.PH_INTERCEPT, 2)
-        time.sleep(config.ADC_SETTLING_TIME)
 
-    ec_val = 1.2 
+    ec_val = 1.2
     if ec_chan:
-        ec_voltages = []
-        for _ in range(10):
-            ec_voltages.append(ec_chan.voltage)
-            time.sleep(0.02)
-        avg_ec_v = sum(ec_voltages) / len(ec_voltages)
-        ec_val = round(avg_ec_v * config.EC_MULTIPLIER, 2)
+        ec_val = round(ec_chan.voltage * config.EC_MULTIPLIER, 2)
 
     now = datetime.now()
     cur_time = time.time()
+    
+    # 2. Control Logic
+    light_state = "ON" if (config.LIGHT_START_HOUR <= now.hour < config.LIGHT_END_HOUR) else "OFF"
+    GPIO.output(config.RELAYS['light'], GPIO.LOW if light_state == "ON" else GPIO.HIGH)
 
-    # --- 1.5 STABILIZATION PHASE ---
-    if cur_time - system_start_time < config.STABILIZATION_PERIOD:
-        remaining_time = int(config.STABILIZATION_PERIOD - (cur_time - system_start_time))
-        current_activity = f"Stabilization ({remaining_time}s)"
-        sys_health = {"health_score": 100, "status": "STARTUP", "prediction": "System warming up..."}
-        update_dashboard_file(t, h, ph_val, ec_val, water_label, "OFF", "OFF", "OFF", "STARTUP", current_activity, sys_health)
-        return
+    if t > (config.TARGET_TEMP + config.TEMP_TOLERANCE): fan_active = True
+    elif t <= config.TARGET_TEMP: fan_active = False
+    GPIO.output(config.RELAYS['fan_1'], GPIO.LOW if fan_active else GPIO.HIGH)
+    GPIO.output(config.RELAYS['fan_2'], GPIO.LOW if fan_active else GPIO.HIGH)
 
-    # --- 2. FAIL-SAFE EVALUATION ---
-    safe_mode, sys_health = evaluate_system_health(t, ph_val, ec_val, water_ok)
-    safety_str = "SAFE MODE" if safe_mode else "OK"
-    light_state, fan_state, pump_state = "OFF", "OFF", "OFF"
-    current_activity = "Monitoring"
-
-    # --- 3. LIGHTS & FANS ---
-    if config.LIGHT_START_HOUR <= now.hour < config.LIGHT_END_HOUR and t < config.CRITICAL_TEMP_LIMIT:
-        GPIO.output(config.RELAYS['light'], GPIO.LOW)
-        light_state = "ON"
-    else:
-        GPIO.output(config.RELAYS['light'], GPIO.HIGH)
-
-    if t > (config.TARGET_TEMP + config.TEMP_TOLERANCE) or h > (config.TARGET_HUMIDITY + config.HUM_TOLERANCE):
-        fan_active = True
-    elif t <= config.TARGET_TEMP and h <= config.TARGET_HUMIDITY:
-        fan_active = False
-
-    if fan_active:
-        GPIO.output(config.RELAYS['fan_1'], GPIO.LOW)
-        GPIO.output(config.RELAYS['fan_2'], GPIO.LOW)
-        fan_state = "ON"
-        current_activity = "Cooling/Dehumidifying"
-    else:
-        GPIO.output(config.RELAYS['fan_1'], GPIO.HIGH)
-        GPIO.output(config.RELAYS['fan_2'], GPIO.HIGH)
-
-    # --- 4. WATER CYCLE (Depends on Water OK) ---
+    # 3. Irrigation Safety (Only pump if there is water!)
+    pump_state = "OFF"
     if water_ok:
         if not is_watering and (cur_time - last_water_time > config.WATER_INTERVAL):
-            is_watering = True
-            water_start_time = cur_time
+            is_watering, water_start_time = True, cur_time
             GPIO.output(config.RELAYS['water_pump'], GPIO.LOW)
         elif is_watering and (cur_time - water_start_time > config.WATER_DURATION):
-            is_watering = False
-            last_water_time = cur_time
+            is_watering, last_water_time = False, cur_time
             GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
+        if is_watering: pump_state = "ON"
     else:
-        # Force Pump OFF if water is low
+        GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH) # Emergency stop if empty
         is_watering = False
-        GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
-    
-    if is_watering: 
-        pump_state = "ON"
-        if not safe_mode: current_activity = "Irrigation"
 
-    # --- 5. CHEMICAL DOSING (Requires Safe Mode OFF + Water OK) ---
-    if not safe_mode and water_ok and (cur_time - last_dose_time > config.DOSE_WAIT_TIME):
-        dosed = False
-        
-        # pH Down
-        if ph_val > (config.TARGET_PH + config.PH_TOLERANCE):
-            if consecutive_ph_doses < config.MAX_CONSECUTIVE_DOSES:
-                current_activity = "Dosing: pH Down" 
-                pump_state = "ON"
-                update_dashboard_file(t, h, ph_val, ec_val, water_label, light_state, fan_state, pump_state, safety_str, current_activity, sys_health)
-                GPIO.output(config.RELAYS['water_pump'], GPIO.LOW)
-                GPIO.output(config.RELAYS['ph_down'], GPIO.LOW)
-                time.sleep(config.PH_DOWN_DURATION)
-                GPIO.output(config.RELAYS['ph_down'], GPIO.HIGH)
-                time.sleep(config.PUMP_MIX_TIME)
-                if not is_watering: GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
-                dosed, consecutive_ph_doses = True, consecutive_ph_doses + 1
-                
-        # pH Up
-        elif ph_val < (config.TARGET_PH - config.PH_TOLERANCE):
-            if consecutive_ph_doses < config.MAX_CONSECUTIVE_DOSES:
-                current_activity = "Dosing: pH Up" 
-                pump_state = "ON"
-                update_dashboard_file(t, h, ph_val, ec_val, water_label, light_state, fan_state, pump_state, safety_str, current_activity, sys_health)
-                GPIO.output(config.RELAYS['water_pump'], GPIO.LOW)
-                GPIO.output(config.RELAYS['ph_up'], GPIO.LOW)
-                time.sleep(config.PH_UP_DURATION)
-                GPIO.output(config.RELAYS['ph_up'], GPIO.HIGH)
-                time.sleep(config.PUMP_MIX_TIME)
-                if not is_watering: GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
-                dosed, consecutive_ph_doses = True, consecutive_ph_doses + 1
-        else:
-            consecutive_ph_doses = 0 
+    # 4. Telemetry Update
+    update_dashboard_file(t, h, ph_val, ec_val, water_label, light_state, "ON" if fan_active else "OFF", pump_state, "OK" if water_ok else "CRITICAL", "Monitoring")
+    print(f"[{now.strftime('%H:%M:%S')}] pH:{ph_val} | EC:{ec_val} | Water:{water_label}      ", end='\r')
 
-        # Nutrients (A then B)
-        if not dosed and ec_val < (config.TARGET_EC - config.EC_TOLERANCE):
-            if consecutive_ec_doses < config.MAX_CONSECUTIVE_DOSES:
-                current_activity = "Dosing: Nutrients" 
-                pump_state = "ON"
-                update_dashboard_file(t, h, ph_val, ec_val, water_label, light_state, fan_state, pump_state, safety_str, current_activity, sys_health)
-                GPIO.output(config.RELAYS['water_pump'], GPIO.LOW)
-                GPIO.output(config.RELAYS['nutrient_a'], GPIO.LOW)
-                time.sleep(config.NUTRI_A_DURATION)
-                GPIO.output(config.RELAYS['nutrient_a'], GPIO.HIGH)
-                time.sleep(1)
-                GPIO.output(config.RELAYS['nutrient_b'], GPIO.LOW)
-                time.sleep(config.NUTRI_B_DURATION)
-                GPIO.output(config.RELAYS['nutrient_b'], GPIO.HIGH)
-                time.sleep(config.PUMP_MIX_TIME)
-                if not is_watering: GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
-                dosed, consecutive_ec_doses = True, consecutive_ec_doses + 1
-        else:
-            consecutive_ec_doses = 0 
-            
-        if dosed: last_dose_time = cur_time
-
-    # --- 6. EXPORT & LOG ---
-    update_dashboard_file(t, h, ph_val, ec_val, water_label, light_state, fan_state, pump_state, safety_str, current_activity, sys_health)
-    log_data_to_csv(t, h, ph_val, ec_val, water_label, light_state, fan_state, pump_state, safety_str, current_activity, sys_health)
-    print(f"[{now.strftime('%H:%M:%S')}] {current_activity} | T:{t}°C pH:{ph_val} EC:{ec_val} W:{water_label}      ", end='\r')
-
-# --- EXECUTION ---
 try:
     while True:
         run_control_loop()
         time.sleep(config.LOOP_DELAY)
 except KeyboardInterrupt:
-    print("\nShutting down safely...")
     GPIO.cleanup()
