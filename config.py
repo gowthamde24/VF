@@ -100,11 +100,9 @@ WATER_LEVEL_PIN = 17
 I2C_ADDR_BME280 = 0x76  
 I2C_ADDR_ADS1115 = 0x48 
 
-# --- DIFFERENTIAL ANALOG MAPPING ---
-# pH: Differential between A0 and A3 (Signal on A0, Ref on A3)
-# EC: Single-ended on A1
-CHAN_PH_POS = 0    
-CHAN_PH_NEG = 3    
+# --- ANALOG MAPPING (REVISED) ---
+# A2 and A3 are unused to prevent I2C bus crashes
+CHAN_PH = 0    
 CHAN_EC = 1   
 
 # --- SYSTEM TIMERS & DELAYS ---
@@ -124,7 +122,7 @@ NUTRI_B_DURATION = 1.0
 PUMP_MIX_TIME = 180         
 DOSE_WAIT_TIME = 1500       
 
-# --- OPTIMAL TARGETS (Lettuce + Fenugreek Polyculture) ---
+# --- OPTIMAL TARGETS ---
 TARGET_TEMP = 23.0          
 TEMP_TOLERANCE = 4.0        
 TARGET_HUMIDITY = 60.0      
@@ -144,11 +142,6 @@ PH_CRITICAL_LOW = 3.0
 PH_CRITICAL_HIGH = 10.0     
 EC_CRITICAL_LOW = 0.0       
 EC_CRITICAL_HIGH = 5.0      
-
-# --- DASHBOARD WARNING BOUNDS ---
-PH_WARN_LOW = 5.0           
-PH_WARN_HIGH = 8.0          
-EC_WARN_LOW = 0.5           
 
 # --- SENSOR CALIBRATION ---
 PH_SLOPE = -5.7706          
