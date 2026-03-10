@@ -457,7 +457,7 @@ def evaluate_system_health(t, ph, water_ok):
         safe_mode = True
 
     # 4. Chemical Imbalance Warnings (pH Only)
-    elif ph < config.PH_WARN_LOW or ph > config.PH_WARN_HIGH:
+    elif ph < (config.TARGET_PH - config.PH_TOLERANCE) or ph > (config.TARGET_PH + config.PH_TOLERANCE):
         health_score = 60
         status = "WARNING"
         prediction = "pH out of safe bounds."
