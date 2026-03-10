@@ -370,10 +370,11 @@ def init_hardware():
     except: print("! BME Error")
     try:
         ads = ADS.ADS1115(i2c, address=config.I2C_ADDR_ADS1115)
-        # Using module constants ADS.P0 and ADS.P1
-        ph_chan = AnalogIn(ads, ADS.P0)
-        ec_chan = AnalogIn(ads, ADS.P1)
-    except: print("! ADS Error")
+        # Using config.CHAN_PH and config.CHAN_EC to match the working diagnostics.py
+        ph_chan = AnalogIn(ads, config.CHAN_PH)
+        ec_chan = AnalogIn(ads, config.CHAN_EC)
+    except Exception as e: 
+        print(f"! ADS Error: {e}")
 
 init_hardware()
 threading.Thread(target=start_web_server, daemon=True).start()
