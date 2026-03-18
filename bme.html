@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BME280 Atmospheric Perception Log</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            background-color: #e5e7eb;
+            font-family: 'Inter', sans-serif;
+            color: #000000;
+        }
+        
+        .paper {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .mono {
+            font-family: 'Courier Prime', monospace;
+        }
+
+        /* Technical Diagram Styles */
+        .tech-border {
+            border: 2px solid #000000;
+        }
+
+        .tech-bg-gray {
+            background-color: #f3f4f6;
+        }
+
+        .tech-bg-dark {
+            background-color: #111827;
+            color: #10b981; /* Terminal green text */
+        }
+
+        /* Custom SVG styling */
+        svg text {
+            font-family: 'Courier Prime', monospace;
+            font-size: 12px;
+            fill: #000000;
+        }
+
+        .grid-line {
+            stroke: #e5e7eb;
+            stroke-width: 1;
+        }
+
+        .axis-line {
+            stroke: #000000;
+            stroke-width: 1.5;
+        }
+
+        .temp-line {
+            stroke: #000000;
+            stroke-width: 3;
+            fill: none;
+        }
+        
+        .rh-line {
+            stroke: #6b7280;
+            stroke-width: 2.5;
+            stroke-dasharray: 6 4;
+            fill: none;
+        }
+
+        .threshold-line {
+            stroke: #000000;
+            stroke-width: 2;
+            stroke-dasharray: 8 4;
+        }
+        
+        .trigger-line {
+            stroke: #000000;
+            stroke-width: 1.5;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-10 px-4 flex justify-center items-center">
+
+    <div class="paper max-w-[1000px] w-full p-8 relative">
+        
+        <!-- Header -->
+        <div class="border-b-4 border-black pb-4 mb-6 flex justify-between items-end">
+            <div>
+                <h1 class="text-2xl font-bold uppercase tracking-wide">Figure 5: Telemetry Validation</h1>
+                <h2 class="text-lg text-gray-700 font-semibold mt-1">BME280 Atmospheric Log & Fail-Safe Actuation</h2>
+            </div>
+            <div class="text-right mono text-sm font-bold bg-gray-100 p-2 border border-black">
+                I2C_ADDR: 0x76<br>
+                POLL_RATE: 1Hz
+            </div>
+        </div>
+
+        <!-- Real-Time Readout Dashboard -->
+        <div class="grid grid-cols-4 gap-4 mb-6">
+            <div class="tech-border p-3 text-center bg-gray-50">
+                <div class="text-xs font-bold uppercase text-gray-500 mb-1">Temperature</div>
+                <div class="text-2xl font-bold mono">28.1 °C</div>
+                <div class="text-xs text-red-600 font-bold mt-1">▲ +0.3/min</div>
+            </div>
+            <div class="tech-border p-3 text-center bg-gray-50">
+                <div class="text-xs font-bold uppercase text-gray-500 mb-1">Relative Humidity</div>
+                <div class="text-2xl font-bold mono">54.2 %</div>
+                <div class="text-xs text-blue-600 font-bold mt-1">▼ -0.5/min</div>
+            </div>
+            <div class="tech-border p-3 text-center bg-gray-50">
+                <div class="text-xs font-bold uppercase text-gray-500 mb-1">Barometric Press.</div>
+                <div class="text-2xl font-bold mono">1012.5 hPa</div>
+                <div class="text-xs text-gray-600 font-bold mt-1">Stable</div>
+            </div>
+            <div class="tech-border p-3 text-center bg-black text-white">
+                <div class="text-xs font-bold uppercase text-gray-400 mb-1">Calculated VPD</div>
+                <div class="text-2xl font-bold mono">1.75 kPa</div>
+                <div class="text-xs text-yellow-400 font-bold mt-1">WARNING: HIGH</div>
+            </div>
+        </div>
+
+        <!-- Time-Series Graph SVG -->
+        <div class="w-full overflow-hidden bg-white border-2 border-black p-4 mb-6 relative">
+            <h3 class="absolute top-4 left-6 font-bold mono text-sm bg-white px-2">Daytime Heat Peak Event (12:00 - 14:00)</h3>
+            
+            <svg viewBox="0 0 900 350" class="w-full h-auto mt-6">
+                
+                <!-- Grid Area: X=60 to 840, Y=20 to 280 -->
+                <!-- Horizontal Grid Lines -->
+                <line x1="60" y1="280" x2="840" y2="280" class="grid-line" />
+                <line x1="60" y1="228" x2="840" y2="228" class="grid-line" />
+                <line x1="60" y1="176" x2="840" y2="176" class="grid-line" />
+                <line x1="60" y1="124" x2="840" y2="124" class="grid-line" />
+                <line x1="60" y1="72" x2="840" y2="72" class="grid-line" />
+                <line x1="60" y1="20" x2="840" y2="20" class="grid-line" />
+
+                <!-- Vertical Grid Lines (Time) -->
+                <line x1="190" y1="20" x2="190" y2="280" class="grid-line" />
+                <line x1="320" y1="20" x2="320" y2="280" class="grid-line" />
+                <line x1="450" y1="20" x2="450" y2="280" class="grid-line" />
+                <line x1="580" y1="20" x2="580" y2="280" class="grid-line" />
+                <line x1="710" y1="20" x2="710" y2="280" class="grid-line" />
+
+                <!-- X Axis (Time) -->
+                <line x1="60" y1="280" x2="840" y2="280" class="axis-line" />
+                <text x="60" y="300" text-anchor="middle">12:00</text>
+                <text x="190" y="300" text-anchor="middle">12:20</text>
+                <text x="320" y="300" text-anchor="middle">12:40</text>
+                <text x="450" y="300" text-anchor="middle">13:00</text>
+                <text x="580" y="300" text-anchor="middle">13:20</text>
+                <text x="710" y="300" text-anchor="middle">13:40</text>
+                <text x="840" y="300" text-anchor="middle">14:00</text>
+                <text x="450" y="330" text-anchor="middle" font-weight="bold">Time (Hours)</text>
+
+                <!-- Left Y Axis (Temperature) -->
+                <line x1="60" y1="280" x2="60" y2="20" class="axis-line" />
+                <!-- Scale: 20C to 30C (Range 10). Height = 260px. 26px per degree. -->
+                <text x="50" y="284" text-anchor="end">20.0</text>
+                <text x="50" y="232" text-anchor="end">22.0</text>
+                <text x="50" y="180" text-anchor="end">24.0</text>
+                <text x="50" y="128" text-anchor="end">26.0</text>
+                <text x="50" y="76" text-anchor="end">28.0</text>
+                <text x="50" y="24" text-anchor="end">30.0</text>
+                <text x="20" y="150" text-anchor="middle" transform="rotate(-90 20 150)" font-weight="bold">Temperature (°C)</text>
+
+                <!-- Right Y Axis (Humidity) -->
+                <line x1="840" y1="280" x2="840" y2="20" class="axis-line" />
+                <!-- Scale: 40% to 90% (Range 50). Height = 260px. 5.2px per 1%. -->
+                <text x="850" y="284" text-anchor="start">40.0</text>
+                <text x="850" y="232" text-anchor="start">50.0</text>
+                <text x="850" y="180" text-anchor="start">60.0</text>
+                <text x="850" y="128" text-anchor="start">70.0</text>
+                <text x="850" y="76" text-anchor="start">80.0</text>
+                <text x="850" y="24" text-anchor="start">90.0</text>
+                <text x="890" y="150" text-anchor="middle" transform="rotate(-90 890 150)" font-weight="bold" fill="#6b7280">Rel. Humidity (%)</text>
+
+                <!-- Critical Temperature Threshold (28.0 C -> Y = 72) -->
+                <line x1="60" y1="72" x2="840" y2="72" class="threshold-line" />
+                <rect x="75" y="58" width="165" height="14" fill="#ffffff" />
+                <text x="80" y="69" font-weight="bold" font-size="11">CRITICAL THRESHOLD (28°C)</text>
+
+                <!-- Data Line: Temperature (Black Solid) -->
+                <!-- Peak around 13:14 (X=541). Starts 22C (Y=228), peaks 28.1C (Y=69.4), drops 25C (Y=150) -->
+                <path d="M 60 228 C 200 220, 400 180, 500 120 C 530 102, 535 70, 541 69 C 550 68, 560 120, 600 160 C 650 200, 750 210, 840 215" class="temp-line" />
+                
+                <!-- Data Line: Humidity (Gray Dashed) -->
+                <!-- Inverse relation. Starts 75% (Y=98), dips 54% (Y=207), recovers 65% (Y=150) -->
+                <path d="M 60 98 C 200 100, 400 130, 500 170 C 530 190, 535 205, 541 207 C 550 209, 560 180, 600 160 C 650 140, 750 145, 840 148" class="rh-line" />
+
+                <!-- Fail-Safe Trigger Event Annotations (at 13:14 -> X=541) -->
+                <line x1="541" y1="20" x2="541" y2="280" class="trigger-line" />
+                <circle cx="541" cy="69" r="5" fill="#000" />
+                
+                <rect x="550" y="25" width="220" height="40" fill="#ffffff" stroke="#000" stroke-width="1.5" />
+                <text x="660" y="40" text-anchor="middle" font-weight="bold" font-size="11">VENTILATION FAIL-SAFE</text>
+                <text x="660" y="55" text-anchor="middle" font-weight="bold" font-size="11">TRIGGERED @ 13:14</text>
+                
+                <!-- Legend -->
+                <rect x="100" y="220" width="160" height="50" fill="#ffffff" stroke="#000" />
+                <line x1="110" y1="235" x2="140" y2="235" class="temp-line" />
+                <text x="150" y="239" font-size="11" font-weight="bold">Temperature</text>
+                <line x1="110" y1="255" x2="140" y2="255" class="rh-line" />
+                <text x="150" y="259" font-size="11" font-weight="bold" fill="#6b7280">Humidity</text>
+            </svg>
+        </div>
+
+        <!-- Terminal / Data Log Window -->
+        <div class="tech-border-dashed p-1">
+            <div class="tech-bg-dark font-mono text-sm p-4 h-48 overflow-hidden relative">
+                <div class="absolute top-2 right-4 text-gray-500 text-xs">tty_UART0</div>
+                
+                <p class="opacity-50">... previous logs omitted ...</p>
+                <p>[13:14:20] I2C_READ 0x76 -> T: 27.8°C | RH: 55.1% | P: 1012.3hPa | VPD: 1.68kPa</p>
+                <p>[13:14:21] I2C_READ 0x76 -> T: 27.9°C | RH: 54.8% | P: 1012.4hPa | VPD: 1.70kPa</p>
+                <p class="text-white mt-1">[13:14:22] I2C_READ 0x76 -> T: 28.1°C | RH: 54.2% | P: 1012.5hPa | VPD: 1.75kPa</p>
+                
+                <p class="text-yellow-400 mt-2 font-bold">> WARNING: T_ACTUAL (28.1°C) EXCEEDS T_CRIT (28.0°C)</p>
+                <p class="text-yellow-400 font-bold">> WARNING: VPD (1.75kPa) INDICATES EXTREME STOMATAL STRESS</p>
+                
+                <p class="text-white mt-2 font-bold animate-pulse">> SYSTEM: INITIATING HAL FAIL-SAFE OVERRIDE</p>
+                <p class="text-white font-bold">> SYSTEM: TRIGGER VENTILATION_RELAY_1 (GPIO_17 ACTIVE-LOW) = TRUE</p>
+                <p class="text-white font-bold">> SYSTEM: TRIGGER HUMIDIFIER_RELAY_2 (GPIO_27 ACTIVE-LOW) = TRUE</p>
+                
+                <p class="mt-2">[13:14:23] I2C_READ 0x76 -> T: 28.1°C | RH: 54.3% | P: 1012.5hPa | VPD: 1.74kPa</p>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

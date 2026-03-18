@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operational Modes: Logic Flowchart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            background-color: #e5e7eb;
+            font-family: 'Inter', sans-serif;
+            color: #000000;
+        }
+        
+        .paper {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .mono {
+            font-family: 'Courier Prime', monospace;
+        }
+
+        /* Technical Diagram Styles */
+        .tech-border {
+            border: 2px solid #000000;
+        }
+        
+        .tech-border-dashed {
+            border: 2px dashed #000000;
+        }
+
+        .tech-bg-dark {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .tech-bg-gray {
+            background-color: #f3f4f6;
+        }
+
+        /* Custom SVG styling */
+        svg text {
+            font-family: 'Courier Prime', monospace;
+            font-size: 13px;
+            fill: #000000;
+        }
+        
+        .flow-line {
+            stroke: #000000;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .flow-line-dashed {
+            stroke: #000000;
+            stroke-width: 1.5;
+            stroke-dasharray: 4 4;
+            fill: none;
+        }
+        
+        .logic-diamond {
+            fill: #ffffff;
+            stroke: #000000;
+            stroke-width: 2;
+        }
+
+        .logic-box {
+            fill: #ffffff;
+            stroke: #000000;
+            stroke-width: 2;
+        }
+        
+        .logic-box-dark {
+            fill: #1a1a1a;
+            stroke: #000000;
+            stroke-width: 2;
+        }
+
+        .logic-text-light {
+            fill: #ffffff;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-10 px-4 flex justify-center items-start">
+
+    <div class="paper max-w-[1000px] w-full p-8 md:p-12 relative">
+        
+        <!-- Header / Title -->
+        <div class="border-b-4 border-black pb-4 mb-8">
+            <h1 class="text-2xl font-bold uppercase tracking-wide">Figure 3: System Operational Modes</h1>
+            <h2 class="text-lg text-gray-700 font-semibold mt-1">Logic Flowchart: Germination (Strict Manual Override) vs. Vegetative (100Hz Automation)</h2>
+        </div>
+
+        <!-- Logic Flowchart SVG -->
+        <div class="tech-border-dashed p-4 relative mb-10 tech-bg-gray">
+            <span class="absolute -top-3 left-4 bg-[#f3f4f6] px-2 mono text-sm font-bold bg-white">Hardware Abstraction Layer (HAL) State Machine</span>
+            
+            <div class="w-full overflow-hidden bg-white tech-border mt-2 py-6">
+                <svg viewBox="0 0 1000 360" class="w-full h-auto">
+                    
+                    <!-- INITIAL STATE -->
+                    <rect x="400" y="20" width="200" height="40" rx="20" ry="20" class="logic-box" />
+                    <text x="500" y="45" text-anchor="middle" font-weight="bold">System Initialization</text>
+
+                    <!-- Arrow Down -->
+                    <path d="M 500 60 L 500 90" class="flow-line" marker-end="url(#arrowhead)" />
+
+                    <!-- DECISION DIAMOND (t <= 96h) -->
+                    <polygon points="500,90 620,130 500,170 380,130" class="logic-diamond" />
+                    <text x="500" y="125" text-anchor="middle" font-weight="bold">Lifecycle Timer</text>
+                    <text x="500" y="145" text-anchor="middle">(t &le; 96 Hours?)</text>
+
+                    <!-- YES BRANCH (Left) -> Germination -->
+                    <path d="M 380 130 L 250 130 L 250 170" class="flow-line" marker-end="url(#arrowhead)" />
+                    <text x="315" y="120" text-anchor="middle" font-weight="bold">YES (TRUE)</text>
+
+                    <!-- NO BRANCH (Right) -> Vegetative -->
+                    <path d="M 620 130 L 750 130 L 750 170" class="flow-line" marker-end="url(#arrowhead)" />
+                    <text x="685" y="120" text-anchor="middle" font-weight="bold">NO (FALSE)</text>
+
+                    <!-- ========================================== -->
+                    <!-- LEFT COLUMN: GERMINATION (MANUAL OVERRIDE) -->
+                    <!-- ========================================== -->
+                    
+                    <!-- Phase Header -->
+                    <rect x="100" y="170" width="300" height="40" class="logic-box-dark" />
+                    <text x="250" y="195" text-anchor="middle" font-weight="bold" class="logic-text-light">GERMINATION PHASE</text>
+                    
+                    <!-- Sub-state -->
+                    <rect x="120" y="210" width="260" height="30" fill="#f3f4f6" stroke="#000" stroke-width="1.5" />
+                    <text x="250" y="230" text-anchor="middle" font-weight="bold" font-size="12">STRICT MANUAL OVERRIDE</text>
+
+                    <!-- Split Line Left -->
+                    <path d="M 250 240 L 250 260" class="flow-line" />
+                    <path d="M 170 260 L 330 260" class="flow-line" />
+                    <path d="M 170 260 L 170 280" class="flow-line" marker-end="url(#arrowhead)" />
+                    <path d="M 330 260 L 330 280" class="flow-line" marker-end="url(#arrowhead)" />
+
+                    <!-- Left Column - Lighting -->
+                    <rect x="70" y="280" width="200" height="50" class="logic-box" />
+                    <text x="170" y="310" text-anchor="middle" font-weight="bold">Actuator Lockout</text>
+                    
+                    <!-- Left Column - Irrigation -->
+                    <rect x="280" y="280" width="200" height="50" class="logic-box" />
+                    <text x="380" y="310" text-anchor="middle" font-weight="bold">Manual Irrigation</text>
+
+                    <!-- ========================================== -->
+                    <!-- RIGHT COLUMN: VEGETATIVE (FULL AUTOMATION) -->
+                    <!-- ========================================== -->
+
+                    <!-- Phase Header -->
+                    <rect x="600" y="170" width="300" height="40" class="logic-box-dark" />
+                    <text x="750" y="195" text-anchor="middle" font-weight="bold" class="logic-text-light">VEGETATIVE PHASE</text>
+                    
+                    <!-- Sub-state -->
+                    <rect x="620" y="210" width="260" height="30" fill="#f3f4f6" stroke="#000" stroke-width="1.5" />
+                    <text x="750" y="230" text-anchor="middle" font-weight="bold" font-size="12">FULL 100Hz AUTOMATION</text>
+
+                    <!-- Split Line Right -->
+                    <path d="M 750 240 L 750 260" class="flow-line" />
+                    <path d="M 670 260 L 830 260" class="flow-line" />
+                    <path d="M 670 260 L 670 280" class="flow-line" marker-end="url(#arrowhead)" />
+                    <path d="M 830 260 L 830 280" class="flow-line" marker-end="url(#arrowhead)" />
+
+                    <!-- Right Column - Lighting -->
+                    <rect x="570" y="280" width="200" height="50" class="logic-box" />
+                    <text x="670" y="310" text-anchor="middle" font-weight="bold">Dynamic Lighting</text>
+                    
+                    <!-- Right Column - Irrigation -->
+                    <rect x="780" y="280" width="200" height="50" class="logic-box" />
+                    <text x="880" y="310" text-anchor="middle" font-weight="bold">Automated Delivery</text>
+
+                    <!-- Definitions -->
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#000" />
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

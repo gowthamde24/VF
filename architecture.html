@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Architecture Pyramid</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+        }
+        
+        /* Custom styling for the bullet points inside the SVG foreignObjects */
+        .info-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            font-size: 14px;
+            color: #1f2937;
+            line-height: 1.4;
+        }
+        
+        .info-list li {
+            position: relative;
+            padding-left: 14px;
+            margin-bottom: 6px;
+        }
+        
+        .info-list li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .pyramid-title {
+            font-weight: 700;
+            color: #111827;
+            text-align: center;
+            line-height: 1.2;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-8">
+
+    <div class="w-full max-w-[1100px] bg-white p-4 sm:p-8 rounded-xl shadow-sm border border-gray-200">
+        
+        <!-- Scalable SVG container handles the exact 3D geometry seamlessly -->
+        <svg viewBox="0 0 1150 510" class="w-full h-auto drop-shadow-sm">
+            
+            <!-- LAYER 4 (TOP) -->
+            <g>
+                <!-- Pyramid Triangle -->
+                <polygon points="450,0 550,120 350,120" fill="#dd636f" />
+                <!-- Pyramid Text -->
+                <foreignObject x="350" y="0" width="200" height="120">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full flex items-end justify-center pb-3">
+                        <span class="pyramid-title text-[14px]">Layer 4:<br>Application</span>
+                    </div>
+                </foreignObject>
+
+                <!-- Grey Info Box -->
+                <polygon points="460,0 1150,0 1150,120 560,120" fill="#f5f6f8" stroke="#cecfd1" stroke-width="1.5" />
+                <!-- Info Box Text (Placed safely to the right of the slant) -->
+                <foreignObject x="560" y="0" width="590" height="120">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full flex flex-col justify-center px-6">
+                        <ul class="info-list">
+                            <li>Local Web Server & Automation Dashboard</li>
+                            <li>Real-Time JSON State Serialization</li>
+                            <li>Remote Visualization & Manual Overrides</li>
+                        </ul>
+                    </div>
+                </foreignObject>
+            </g>
+
+            <!-- LAYER 3 -->
+            <g>
+                <!-- Pyramid Trapezoid -->
+                <polygon points="342,130 558,130 658,250 242,250" fill="#f2aa84" />
+                <!-- Pyramid Text -->
+                <foreignObject x="242" y="130" width="416" height="120">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full flex items-center justify-center">
+                        <span class="pyramid-title text-[15px]">Layer 3:<br>Cyber / Logic</span>
+                    </div>
+                </foreignObject>
+
+                <!-- Grey Info Box -->
+                <polygon points="568,130 1150,130 1150,250 668,250" fill="#f5f6f8" stroke="#cecfd1" stroke-width="1.5" />
+                <!-- Info Box Text -->
+                <foreignObject x="668" y="130" width="482" height="120">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full flex flex-col justify-center px-6">
+                        <ul class="info-list">
+                            <li>Raspberry Pi 4 Quad-Core SoC</li>
+                            <li>Asynchronous Python Control Loop</li>
+                            <li>Rule-Based Fail-Safes & Hysteresis</li>
+                            <li>Pulse-and-Wait Micro-Dosing Algorithm</li>
+                        </ul>
+                    </div>
+                </foreignObject>
+            </g>
+
+            <!-- LAYER 2 -->
+            <g>
+                <!-- Pyramid Trapezoid -->
+                <polygon points="234,260 666,260 766,380 134,380" fill="#4392ce" />
+                <!-- Pyramid Text -->
+                <foreignObject x="134" y="260" width="632" height="120">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full flex items-center justify-center">
+                        <span class="pyramid-title text-[15px]">Layer 2:<br>Perception & Actuation</span>
+                    </div>
+                </foreignObject>
+
+                <!-- Grey Info Box -->
+                <polygon points="676,260 1150,260 1150,380 776,380" fill="#f5f6f8" stroke="#cecfd1" stroke-width="1.5" />
+                <!-- Info Box Text -->
+                <foreignObject x="776" y="260" width="374" height="120">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full flex flex-col justify-center px-6">
+                        <ul class="info-list">
+                            <li>ADS1115 16-bit ADC & BME280 Climate Sensor</li>
+                            <li>Opto-Isolated Relays (Active-Low Logic)</li>
+                            <li>12V Centrifugal & Peristaltic Dosing Pumps</li>
+                        </ul>
+                    </div>
+                </foreignObject>
+            </g>
+
+            <!-- LAYER 1 (BOTTOM) -->
+            <g>
+                <!-- Pyramid Trapezoid -->
+                <polygon points="126,390 774,390 874,510 26,510" fill="#43af73" />
+                <!-- Pyramid Text -->
+                <foreignObject x="26" y="390" width="848" height="120">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full flex items-center justify-center">
+                        <span class="pyramid-title text-[15px]">Layer 1:<br>Physical (Plant & Hydraulics)</span>
+                    </div>
+                </foreignObject>
+
+                <!-- Grey Info Box -->
+                <polygon points="784,390 1150,390 1150,510 884,510" fill="#f5f6f8" stroke="#cecfd1" stroke-width="1.5" />
+                <!-- Info Box Text -->
+                <foreignObject x="884" y="390" width="266" height="120">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full flex flex-col justify-center px-5">
+                        <ul class="info-list">
+                            <li>50L Nutrient Reservoir</li>
+                            <li>2.5 inch UV-Blocking PVC Pipes</li>
+                            <li>Lettuce & Fenugreek Polyculture</li>
+                        </ul>
+                    </div>
+                </foreignObject>
+            </g>
+
+        </svg>
+
+    </div>
+
+</body>
+</html>

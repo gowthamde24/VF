@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active-Low Fail-Safe Diagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            background-color: #e5e7eb;
+            font-family: 'Inter', sans-serif;
+            color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }
+        
+        .paper {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        /* Custom SVG styling */
+        svg text {
+            font-family: 'Courier Prime', monospace;
+            font-size: 13px;
+            fill: #000000;
+        }
+
+        .wire {
+            fill: none;
+            stroke: #000000;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .component-box {
+            fill: #ffffff;
+            stroke: #000000;
+            stroke-width: 2.5;
+        }
+
+        .resistor-line {
+            fill: none;
+            stroke: #000000;
+            stroke-width: 2.5;
+        }
+
+        .highlight-box {
+            fill: #f8fafc;
+            stroke: #000000;
+            stroke-width: 1.5;
+            stroke-dasharray: 4 2;
+        }
+
+        .text-mask {
+            fill: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="paper">
+        <!-- Strictly the diagram in a clean SVG container -->
+        <div class="w-full overflow-hidden bg-white border-2 border-black p-4">
+            <!-- Expanded viewBox width to 1050 to give the Relay Module breathing room on the right -->
+            <svg viewBox="0 0 1050 500" class="w-full h-auto bg-[#fcfcfc]">
+                
+                <!-- Grid Background -->
+                <defs>
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1"/>
+                    </pattern>
+                    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#000" />
+                    </marker>
+                </defs>
+                <rect x="0" y="0" width="1050" height="500" fill="url(#grid)" />
+
+                <!-- ========================================== -->
+                <!-- RASPBERRY PI GPIO STAGE (LEFT)             -->
+                <!-- ========================================== -->
+                <rect x="50" y="50" width="320" height="380" class="component-box" />
+                <rect x="50" y="50" width="320" height="30" fill="#1a1a1a" />
+                <text x="210" y="71" text-anchor="middle" font-weight="bold" fill="#ffffff">RASPBERRY PI (SOC)</text>
+
+                <!-- Boot-up Phase Container -->
+                <rect x="70" y="100" width="280" height="180" class="highlight-box" />
+                <text x="210" y="125" text-anchor="middle" font-weight="bold" font-size="14">BOOT-UP PHASE (t < 30s)</text>
+                
+                <!-- Internal Floating Switch Logic -->
+                <line x1="100" y1="200" x2="150" y2="200" class="wire" />
+                <circle cx="155" cy="200" r="5" fill="none" stroke="#000" stroke-width="2"/>
+                <!-- Angled line representing open/floating state -->
+                <line x1="158" y1="198" x2="195" y2="170" class="wire" /> 
+                <circle cx="202" cy="200" r="5" fill="#000"/>
+                
+                <rect x="100" y="235" width="220" height="35" class="text-mask" />
+                <text x="210" y="250" text-anchor="middle" font-style="italic" font-size="11">State: Floating / High Impedance</text>
+                <text x="210" y="265" text-anchor="middle" font-weight="bold" font-size="11">UNDEFINED VOLTAGE (V_float)</text>
+
+                <!-- Pin connection -->
+                <line x1="208" y1="200" x2="370" y2="200" class="wire" />
+                <rect x="350" y="185" width="40" height="30" class="component-box" />
+                <text x="345" y="175" text-anchor="end" font-weight="bold">GPIO_17</text>
+
+
+                <!-- ========================================== -->
+                <!-- PULL-UP FAIL-SAFE STAGE (MIDDLE)           -->
+                <!-- ========================================== -->
+                
+                <!-- Vcc Connection -->
+                <line x1="480" y1="30" x2="480" y2="120" class="wire" />
+                <text x="480" y="22" text-anchor="middle" font-weight="bold" font-size="14">Vcc (Logic High)</text>
+                
+                <!-- Resistor Symbol (Zig-zag) -->
+                <polyline points="480,120 470,125 490,135 470,145 490,155 470,165 490,175 480,180" class="resistor-line" />
+                <line x1="480" y1="180" x2="480" y2="200" class="wire" />
+                
+                <!-- Resistor Labels (Placed to the left to avoid wire) -->
+                <rect x="390" y="140" width="80" height="30" class="text-mask" />
+                <text x="465" y="155" text-anchor="end" font-weight="bold">10kΩ</text>
+                <text x="465" y="170" text-anchor="end" font-size="10">PULL-UP</text>
+
+                <!-- Connection Node -->
+                <circle cx="480" cy="200" r="5" fill="#000" />
+                <line x1="370" y1="200" x2="680" y2="200" class="wire" />
+
+                <!-- Logic Action Annotation (Repositioned to start at x=495 to avoid relay overlap) -->
+                <path d="M 480 80 L 480 180" class="wire" marker-end="url(#arrow)" stroke-dasharray="3 3" />
+                
+                <rect x="495" y="100" width="165" height="50" class="text-mask" fill-opacity="0.9" />
+                <text x="500" y="115" font-weight="bold" font-size="11">FAIL-SAFE ACTION:</text>
+                <text x="500" y="130" font-size="11">Forces floating pin</text>
+                <text x="500" y="145" font-size="11">to Logic HIGH state.</text>
+
+
+                <!-- ========================================== -->
+                <!-- RELAY MODULE (RIGHT)                       -->
+                <!-- ========================================== -->
+                <!-- Shifted x from 620 to 680 to resolve overlap with "Fail-Safe Action" text -->
+                <rect x="680" y="100" width="280" height="330" class="component-box" />
+                <rect x="680" y="100" width="280" height="30" fill="#1a1a1a" />
+                <text x="820" y="121" text-anchor="middle" font-weight="bold" fill="#ffffff">RELAY MODULE</text>
+
+                <text x="820" y="155" text-anchor="middle" font-weight="bold" font-size="12">ACTIVE-LOW LOGIC</text>
+                
+                <!-- Internal Opto-Isolator Representation -->
+                <line x1="700" y1="200" x2="740" y2="200" class="wire" />
+                <polygon points="740,185 740,215 760,200" fill="#000" />
+                <line x1="760" y1="185" x2="760" y2="215" stroke="#000" stroke-width="4" />
+                
+                <!-- Relay Switch Contact State (Normally Open) -->
+                <circle cx="820" cy="300" r="8" fill="none" stroke="#000" stroke-width="2" />
+                <line x1="828" y1="298" x2="900" y2="260" class="wire" /> <!-- OPEN POSITION -->
+                
+                <!-- Safety Buffer Annotation -->
+                <rect x="580" y="270" width="160" height="60" class="text-mask" stroke="#000" stroke-width="1" stroke-dasharray="2 2" />
+                <text x="660" y="290" text-anchor="middle" font-weight="bold" font-size="11">Safety Buffer:</text>
+                <text x="660" y="305" text-anchor="middle" font-size="10">Prevents acid flood</text>
+                <text x="660" y="320" text-anchor="middle" font-size="10">on system reboot.</text>
+
+                <!-- Status Labels -->
+                <rect x="730" y="330" width="180" height="35" fill="#000" />
+                <text x="820" y="353" text-anchor="middle" fill="#fff" font-weight="bold">NORMALLY OPEN (OFF)</text>
+                
+                <rect x="700" y="380" width="240" height="35" fill="#f1f5f9" stroke="#000" stroke-width="1.5" />
+                <text x="820" y="403" text-anchor="middle" font-weight="bold" font-size="14" fill="#dc2626">SYSTEM STATE: SAFE (OFF)</text>
+
+            </svg>
+        </div>
+    </div>
+
+</body>
+</html>

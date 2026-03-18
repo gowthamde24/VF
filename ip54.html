@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architectural Pivot: IP54 & Pi 4 Strategy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            background-color: #e5e7eb;
+            font-family: 'Inter', sans-serif;
+            color: #000000;
+        }
+        
+        .paper {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .mono {
+            font-family: 'Courier Prime', monospace;
+        }
+
+        /* Technical Diagram Styles */
+        .tech-border {
+            border: 2px solid #000000;
+        }
+        
+        .tech-border-dashed {
+            border: 2px dashed #000000;
+        }
+
+        .tech-bg-dark {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .tech-bg-gray {
+            background-color: #f3f4f6;
+        }
+
+        /* Custom SVG styling */
+        svg text {
+            font-family: 'Courier Prime', monospace;
+            font-size: 13px;
+            fill: #000000;
+        }
+        
+        .label-line {
+            stroke: #000000;
+            stroke-width: 1;
+            stroke-dasharray: 2 2;
+        }
+
+        .hazard-line {
+            stroke: #000000;
+            stroke-width: 1.5;
+            fill: none;
+        }
+        
+        .box-interior {
+            fill: #fafafa;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-10 px-4 flex justify-center items-start">
+
+    <div class="paper max-w-[1000px] w-full p-8 md:p-12 relative">
+        
+        <!-- Header / Title -->
+        <div class="border-b-4 border-black pb-4 mb-8">
+            <h1 class="text-2xl font-bold uppercase tracking-wide">Figure 2: Architectural Pivot</h1>
+            <h2 class="text-lg text-gray-700 font-semibold mt-1">IP54 Environmental Isolation & BCM2711 (Pi 4) Thermal Mitigation Strategy</h2>
+        </div>
+
+        <!-- Cross-Sectional Diagram -->
+        <div class="tech-border-dashed p-4 relative mb-10 tech-bg-gray">
+            <span class="absolute -top-3 left-4 bg-[#f3f4f6] px-2 mono text-sm font-bold bg-white">External Environment: Extreme Biological Humidity & Nutrient Splashing</span>
+            
+            <div class="w-full overflow-hidden bg-white tech-border mt-2">
+                <svg viewBox="0 0 1100 420" class="w-full h-auto">
+                    <!-- Background / Ambient -->
+                    <rect x="0" y="0" width="1100" height="420" fill="#ffffff" />
+                    
+                    <!-- Environmental Hazards (Left Side - Dust/Humidity) -->
+                    <text x="250" y="80" font-weight="bold" font-style="italic" text-anchor="end">Atomized Humidity / Dust</text>
+                    <path d="M 170 100 Q 230 120 230 160" class="hazard-line" marker-end="url(#arrowhead)" />
+                    <circle cx="130" cy="110" r="1.5" fill="#000" /><circle cx="145" cy="125" r="1.5" fill="#000" />
+                    <circle cx="160" cy="105" r="1.5" fill="#000" /><circle cx="180" cy="140" r="1.5" fill="#000" />
+                    
+                    <!-- Environmental Hazards (Right Side - Splashing) -->
+                    <text x="850" y="80" font-weight="bold" font-style="italic" text-anchor="start">Nutrient Water Splashes</text>
+                    <path d="M 930 100 Q 880 140 890 180" class="hazard-line" marker-end="url(#arrowhead)" />
+                    <path d="M 960 110 Q 910 160 940 210" class="hazard-line" marker-end="url(#arrowhead)" />
+                    
+                    <!-- Bouncing effect off the box -->
+                    <path d="M 230 160 Q 200 180 180 170" class="hazard-line" stroke-dasharray="2 2" />
+                    <path d="M 890 180 Q 920 190 950 170" class="hazard-line" stroke-dasharray="2 2" />
+
+                    <!-- The IP54 Enclosure Box -->
+                    <rect x="275" y="70" width="550" height="300" rx="10" ry="10" stroke="#000" stroke-width="6" class="box-interior" />
+                    <rect x="281" y="76" width="538" height="288" rx="6" ry="6" stroke="#000" stroke-width="1.5" fill="none" />
+                    
+                    <text x="550" y="100" text-anchor="middle" font-weight="bold" font-size="16">Sealed Industrial Control Box</text>
+                    <text x="550" y="120" text-anchor="middle" font-weight="bold" font-size="14" fill="#333">Rating: IP54</text>
+                    
+                    <line x1="830" y1="250" x2="875" y2="250" class="label-line" />
+                    <text x="880" y="245" font-size="11" text-anchor="start">Sealed Mechanical Boundary</text>
+                    <text x="880" y="260" font-size="11" text-anchor="start">(Protects against splash/ingress)</text>
+
+                    <!-- 3D Modeled Mounts (Standoffs) -->
+                    <!-- Left Mount -->
+                    <rect x="355" y="310" width="20" height="60" fill="#666" />
+                    <rect x="345" y="350" width="40" height="20" fill="#333" />
+                    <!-- Right Mount -->
+                    <rect x="725" y="310" width="20" height="60" fill="#666" />
+                    <rect x="715" y="350" width="40" height="20" fill="#333" />
+
+                    <!-- Main Internal Board Sub-assembly -->
+                    <rect x="335" y="295" width="430" height="15" fill="#111" />
+                    <text x="550" y="325" text-anchor="middle" font-size="11" font-weight="bold" fill="#666">Internal Component Topology</text>
+
+                    <!-- Component 1: Pi 4 & Heatsink -->
+                    <rect x="365" y="265" width="80" height="30" fill="#000" />
+                    <!-- Heatsink Fins -->
+                    <rect x="375" y="245" width="4" height="20" fill="#888" /><rect x="385" y="245" width="4" height="20" fill="#888" />
+                    <rect x="395" y="245" width="4" height="20" fill="#888" /><rect x="405" y="245" width="4" height="20" fill="#888" />
+                    <rect x="415" y="245" width="4" height="20" fill="#888" /><rect x="425" y="245" width="4" height="20" fill="#888" />
+                    
+                    <line x1="405" y1="240" x2="405" y2="180" class="label-line" />
+                    <text x="405" y="155" text-anchor="middle" font-weight="bold">Raspberry Pi 4 (BCM2711)</text>
+                    <text x="405" y="170" text-anchor="middle" font-size="11">Downgraded clock: 1.5 GHz</text>
+                    
+                    <!-- Component 2: 12V Buck Converter -->
+                    <rect x="495" y="255" width="60" height="40" fill="#444" />
+                    <circle cx="510" cy="275" r="10" fill="#222" /><!-- Capacitor mockup -->
+                    <line x1="525" y1="250" x2="525" y2="210" class="label-line" />
+                    <text x="525" y="200" text-anchor="middle" font-weight="bold">12V Buck Conv.</text>
+
+                    <!-- Component 3: HV Relay Modules -->
+                    <rect x="595" y="245" width="120" height="50" fill="#222" />
+                    <rect x="605" y="255" width="30" height="30" fill="#555" />
+                    <rect x="640" y="255" width="30" height="30" fill="#555" />
+                    <rect x="675" y="255" width="30" height="30" fill="#555" />
+                    <line x1="655" y1="240" x2="655" y2="210" class="label-line" />
+                    <text x="655" y="200" text-anchor="middle" font-weight="bold">HV Relay Modules</text>
+
+                    <!-- Arrowhead Definition -->
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#000" />
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Analytical Breakdown Grid -->
+        <h3 class="text-xl font-bold uppercase border-b-2 border-black pb-2 mb-6">Strategic Countermeasures Executed</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Strategy 1 -->
+            <div class="tech-border p-5 flex flex-col h-full relative bg-gray-50">
+                <div class="absolute -top-3 left-4 bg-gray-50 px-2 font-bold mono border border-black">STRATEGY I</div>
+                <h4 class="font-bold text-lg mb-3 mt-2">Thermal Downgrade</h4>
+                <ul class="list-none space-y-3 text-sm flex-grow">
+                    <li class="flex items-start">
+                        <span class="mr-2">▪</span>
+                        <span><b>SoC Replacement:</b> Transitioned from Pi 5 to Raspberry Pi 4 Model B (BCM2711).</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="mr-2">▪</span>
+                        <span><b>Clock Speed Reduction:</b> Base clock reduced from 2.4 GHz to 1.5 GHz.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="mr-2">▪</span>
+                        <span><b>Net Effect:</b> Substantially lower localized thermal output, eliminating the sharp temperature differential causing micro-condensation.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Strategy 2 -->
+            <div class="tech-border p-5 flex flex-col h-full relative bg-white">
+                <div class="absolute -top-3 left-4 bg-white px-2 font-bold mono border border-black">STRATEGY II</div>
+                <h4 class="font-bold text-lg mb-3 mt-2">IP54 Sealing</h4>
+                <ul class="list-none space-y-3 text-sm flex-grow">
+                    <li class="flex items-start">
+                        <span class="mr-2">▪</span>
+                        <span><b>Topology Change:</b> Exposed breadboard topology entirely abandoned.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="mr-2">▪</span>
+                        <span><b>Ingress Protection (IP):</b> Encased in industrial box rated IEC 60529 IP54.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="mr-2">▪</span>
+                        <span class="bg-gray-200 px-1 mono text-xs leading-5">5 = Robust Dust Protection</span><br>
+                        <span class="bg-gray-200 px-1 mono text-xs leading-5">4 = Multi-directional Splash Guard</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Strategy 3 -->
+            <div class="tech-border p-5 flex flex-col h-full relative tech-bg-dark">
+                <div class="absolute -top-3 left-4 bg-[#1a1a1a] px-2 font-bold mono text-white border border-white">STRATEGY III</div>
+                <h4 class="font-bold text-lg mb-3 mt-2 text-white">Physical Isolation</h4>
+                <ul class="list-none space-y-3 text-sm flex-grow text-gray-300">
+                    <li class="flex items-start">
+                        <span class="mr-2 text-white">▪</span>
+                        <span><b>Custom Engineering:</b> 3D-modeled standoffs designed to elevate computational logic.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="mr-2 text-white">▪</span>
+                        <span><b>Mechanical Shielding:</b> Physically isolates sensitive PCB contacts from accidental pooling or bottom-up condensation.</span>
+                    </li>
+                    <li class="flex items-start mt-4">
+                        <span class="border border-white p-2 w-full text-center font-bold text-white uppercase tracking-wider text-[10px]">
+                            Result: Zero Subsequent SBC Failures
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

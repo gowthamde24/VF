@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pH Calibration & Nernstian Validation Diagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            background-color: #e5e7eb;
+            font-family: 'Inter', sans-serif;
+            color: #000000;
+        }
+        
+        .paper {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .mono {
+            font-family: 'Courier Prime', monospace;
+        }
+
+        /* Custom SVG styling */
+        svg text {
+            font-family: 'Courier Prime', monospace;
+            font-size: 14px;
+            fill: #000000;
+        }
+
+        .grid-line {
+            stroke: #e5e7eb;
+            stroke-width: 1;
+        }
+
+        .axis-line {
+            stroke: #000000;
+            stroke-width: 2;
+        }
+
+        .regression-line {
+            stroke: #000000;
+            stroke-width: 2.5;
+        }
+        
+        .callout-line {
+            stroke: #000000;
+            stroke-width: 1;
+            stroke-dasharray: 4 4;
+            fill: none;
+        }
+
+        .inset-box {
+            fill: #ffffff;
+            stroke: #000000;
+            stroke-width: 1.5;
+        }
+
+        .outlier-x {
+            stroke: #000000;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-10 px-4 flex justify-center items-center">
+
+    <div class="paper max-w-[1100px] w-full p-6 relative">
+        
+        <!-- Graph SVG (Strictly the diagram, enlarged width to prevent any clipping) -->
+        <div class="w-full overflow-hidden bg-white border-2 border-black p-2">
+            <svg viewBox="-10 -10 1040 540" class="w-full h-auto bg-[#f8fafc]">
+                
+                <!-- Grid Lines (Y-Axis: pH 0 to 14) -->
+                <!-- Spacing: 350px / 14 = 25px per pH unit. Origin Y = 420 -->
+                <line x1="80" y1="370" x2="850" y2="370" class="grid-line" /> <!-- pH 2 -->
+                <line x1="80" y1="320" x2="850" y2="320" class="grid-line" /> <!-- pH 4 -->
+                <line x1="80" y1="270" x2="850" y2="270" class="grid-line" /> <!-- pH 6 -->
+                <line x1="80" y1="220" x2="850" y2="220" class="grid-line" /> <!-- pH 8 -->
+                <line x1="80" y1="170" x2="850" y2="170" class="grid-line" /> <!-- pH 10 -->
+                <line x1="80" y1="120" x2="850" y2="120" class="grid-line" /> <!-- pH 12 -->
+                <line x1="80" y1="70" x2="850" y2="70" class="grid-line" />  <!-- pH 14 -->
+
+                <!-- Grid Lines (X-Axis: Voltage 0.0 to 3.5V) -->
+                <!-- Spacing: 700px / 3.5V = 200px per Volt. Origin X = 80 -->
+                <line x1="180" y1="70" x2="180" y2="420" class="grid-line" /> <!-- 0.5V -->
+                <line x1="280" y1="70" x2="280" y2="420" class="grid-line" /> <!-- 1.0V -->
+                <line x1="380" y1="70" x2="380" y2="420" class="grid-line" /> <!-- 1.5V -->
+                <line x1="480" y1="70" x2="480" y2="420" class="grid-line" /> <!-- 2.0V -->
+                <line x1="580" y1="70" x2="580" y2="420" class="grid-line" /> <!-- 2.5V -->
+                <line x1="680" y1="70" x2="680" y2="420" class="grid-line" /> <!-- 3.0V -->
+                <line x1="780" y1="70" x2="780" y2="420" class="grid-line" /> <!-- 3.5V -->
+
+                <!-- Main Axes -->
+                <line x1="80" y1="420" x2="980" y2="420" class="axis-line" marker-end="url(#arrowhead)" />
+                <line x1="80" y1="420" x2="80" y2="40" class="axis-line" marker-end="url(#arrowhead)" />
+
+                <!-- Y-Axis Labels (pH) -->
+                <text x="65" y="424" text-anchor="end">0.0</text>
+                <text x="65" y="374" text-anchor="end">2.0</text>
+                <text x="65" y="324" text-anchor="end">4.0</text>
+                <text x="65" y="274" text-anchor="end">6.0</text>
+                <text x="65" y="224" text-anchor="end">8.0</text>
+                <text x="65" y="174" text-anchor="end">10.0</text>
+                <text x="65" y="124" text-anchor="end">12.0</text>
+                <text x="65" y="74" text-anchor="end">14.0</text>
+                <text x="25" y="245" text-anchor="middle" transform="rotate(-90 25 245)" font-weight="bold" font-size="16">Calculated pH (pH_calc)</text>
+
+                <!-- X-Axis Labels (Voltage) -->
+                <text x="80" y="450" text-anchor="middle">0.0V</text>
+                <text x="180" y="450" text-anchor="middle">0.5V</text>
+                <text x="280" y="450" text-anchor="middle">1.0V</text>
+                <text x="380" y="450" text-anchor="middle">1.5V</text>
+                <text x="480" y="450" text-anchor="middle">2.0V</text>
+                <text x="580" y="450" text-anchor="middle">2.5V</text>
+                <text x="680" y="450" text-anchor="middle">3.0V</text>
+                <text x="780" y="450" text-anchor="middle">3.5V</text>
+                <text x="450" y="490" text-anchor="middle" font-weight="bold" font-size="16">Averaged Probe Voltage (V_avg)</text>
+
+                <!-- REGRESSION LINE -->
+                <!-- Equation: pH = -5.7706 * V + 15.8918 -->
+                <line x1="145.6" y1="70" x2="630.8" y2="420" class="regression-line" />
+
+                <!-- Formula Label -->
+                <rect x="120" y="340" width="280" height="40" fill="#ffffff" stroke="#000000" stroke-width="1" />
+                <text x="260" y="364" text-anchor="middle" font-weight="bold">pH = -5.7706 * V_avg + 15.8918</text>
+
+                <!-- DATA CLUSTERS (Simulated Buffer Solutions: pH 10, pH 7, pH 4) -->
+                
+                <!-- Buffer pH 10 (V = 1.02, X = 284, Y = 170) -->
+                <circle cx="284" cy="170" r="5" fill="none" stroke="#000" stroke-width="2" />
+                <circle cx="282" cy="170" r="1.5" fill="#000" />
+                <circle cx="286" cy="170" r="1.5" fill="#000" />
+                <circle cx="284" cy="168" r="1.5" fill="#000" />
+                <circle cx="284" cy="172" r="1.5" fill="#000" />
+                <!-- Outliers -->
+                <g transform="translate(270, 170)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+                <g transform="translate(298, 170)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+
+                <!-- Buffer pH 4 (V = 2.06, X = 492, Y = 320) -->
+                <circle cx="492" cy="320" r="5" fill="none" stroke="#000" stroke-width="2" />
+                <circle cx="490" cy="320" r="1.5" fill="#000" />
+                <circle cx="494" cy="320" r="1.5" fill="#000" />
+                <circle cx="492" cy="318" r="1.5" fill="#000" />
+                <circle cx="492" cy="322" r="1.5" fill="#000" />
+                <!-- Outliers -->
+                <g transform="translate(475, 320)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+                <g transform="translate(510, 320)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+                
+                <!-- Buffer pH 7 (V = 1.54, X = 388, Y = 245) - THIS ONE IS ZOOMED -->
+                <rect x="373" y="230" width="30" height="30" fill="none" stroke="#000" stroke-width="1.5" stroke-dasharray="2 2" />
+                <!-- Callout lines -->
+                <line x1="403" y1="230" x2="490" y2="50" class="callout-line" />
+                <line x1="403" y1="260" x2="490" y2="280" class="callout-line" />
+
+
+                <!-- ========================================================= -->
+                <!-- ORMA ZOOM-IN INSET BOX                                    -->
+                <!-- ========================================================= -->
+                <rect x="490" y="50" width="490" height="230" class="inset-box" />
+                <rect x="490" y="50" width="490" height="35" fill="#1a1a1a" />
+                <text x="735" y="73" text-anchor="middle" font-weight="bold" fill="#ffffff" font-size="16">ORMA EMI Filtering (pH 7.0 Buffer)</text>
+
+                <!-- Inset Axes -->
+                <line x1="510" y1="210" x2="960" y2="210" stroke="#000" stroke-width="1.5" />
+                <text x="735" y="240" text-anchor="middle" font-size="14">Raw Voltage Samples (N=100 at 500Hz)</text>
+                <text x="735" y="260" text-anchor="middle" font-size="14" font-style="italic">Note: Variance is purely horizontal (Voltage noise)</text>
+
+                <!-- Accept Window -->
+                <rect x="650" y="110" width="170" height="100" fill="#f3f4f6" stroke="#000" stroke-dasharray="2 2" />
+                <text x="735" y="140" text-anchor="middle" font-weight="bold" font-size="14">Retained: Middle 60</text>
+                <text x="735" y="160" text-anchor="middle" font-weight="bold" font-size="14">Samples -> V_avg</text>
+
+                <!-- Discard Boundaries -->
+                <line x1="650" y1="100" x2="650" y2="220" stroke="#000" stroke-width="2" />
+                <line x1="820" y1="100" x2="820" y2="220" stroke="#000" stroke-width="2" />
+                
+                <text x="575" y="140" text-anchor="middle" font-size="14" font-weight="bold">Discarded</text>
+                <text x="575" y="160" text-anchor="middle" font-size="14">Bottom 20</text>
+                
+                <text x="895" y="140" text-anchor="middle" font-size="14" font-weight="bold">Discarded</text>
+                <text x="895" y="160" text-anchor="middle" font-size="14">Top 20</text>
+
+                <!-- Plotting 100 Dots (Simulated) -->
+                <!-- Center is X=735 -->
+                
+                <!-- Valid samples (Black Dots) -->
+                <circle cx="735" cy="210" r="3" fill="#000" /><circle cx="745" cy="210" r="3" fill="#000" />
+                <circle cx="755" cy="210" r="3" fill="#000" /><circle cx="765" cy="210" r="3" fill="#000" />
+                <circle cx="775" cy="210" r="3" fill="#000" /><circle cx="725" cy="210" r="3" fill="#000" />
+                <circle cx="715" cy="210" r="3" fill="#000" /><circle cx="705" cy="210" r="3" fill="#000" />
+                <circle cx="695" cy="210" r="3" fill="#000" /><circle cx="785" cy="210" r="3" fill="#000" />
+                <circle cx="795" cy="210" r="3" fill="#000" /><circle cx="805" cy="210" r="3" fill="#000" />
+                
+                <!-- Stacked valid samples to represent density -->
+                <circle cx="735" cy="204" r="3" fill="#000" /><circle cx="725" cy="204" r="3" fill="#000" />
+                <circle cx="745" cy="204" r="3" fill="#000" /><circle cx="715" cy="204" r="3" fill="#000" />
+                <circle cx="755" cy="204" r="3" fill="#000" /><circle cx="735" cy="198" r="3" fill="#000" />
+                <circle cx="725" cy="198" r="3" fill="#000" /><circle cx="745" cy="198" r="3" fill="#000" />
+
+                <!-- Discarded samples (X marks) due to Pump Inductive Spikes -->
+                <!-- Lower Outliers -->
+                <g transform="translate(565, 210)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+                <g transform="translate(585, 210)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+                <g transform="translate(605, 210)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+                <g transform="translate(625, 210)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+                <!-- Upper Outliers -->
+                <g transform="translate(845, 210)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+                <g transform="translate(865, 210)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+                <g transform="translate(885, 210)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+                <g transform="translate(905, 210)" class="outlier-x"><path d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>
+                
+                
+                <!-- ========================================================= -->
+                <!-- LEGEND                                                    -->
+                <!-- ========================================================= -->
+                <rect x="660" y="295" width="320" height="110" fill="#ffffff" stroke="#000" stroke-width="1.5" />
+                <text x="680" y="315" font-weight="bold" text-decoration="underline" font-size="16">Legend:</text>
+                
+                <line x1="680" y1="340" x2="710" y2="340" class="regression-line" />
+                <text x="730" y="345">Linear Regression Line</text>
+
+                <circle cx="695" cy="365" r="6" fill="none" stroke="#000" stroke-width="2" />
+                <circle cx="695" cy="365" r="2.5" fill="#000" />
+                <text x="730" y="370">ORMA Computed V_avg</text>
+
+                <g transform="translate(695, 390)" class="outlier-x"><path d="M-5 -5 L5 5 M5 -5 L-5 5"/></g>
+                <text x="730" y="395">Discarded Inductive Spikes</text>
+
+                <!-- Arrow Definitions -->
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#000" />
+                    </marker>
+                </defs>
+
+            </svg>
+        </div>
+
+    </div>
+
+</body>
+</html>

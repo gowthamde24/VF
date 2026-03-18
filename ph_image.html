@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peristaltic Dosing Pumps Schematic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            background-color: #e5e7eb;
+            font-family: 'Inter', sans-serif;
+            color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+        }
+        
+        .paper {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Custom SVG styling */
+        svg text {
+            font-family: 'Courier Prime', monospace;
+            font-size: 14px;
+            fill: #000000;
+        }
+
+        .diagram-box {
+            fill: #ffffff;
+            stroke: #000000;
+            stroke-width: 2.5;
+        }
+
+        /* Tri-layered tube styling for the "hollow dashed" look */
+        .tube-outline {
+            fill: none;
+            stroke: #000000;
+            stroke-width: 8;
+        }
+        .tube-inner {
+            fill: none;
+            stroke: #ffffff;
+            stroke-width: 5;
+        }
+        .tube-dash {
+            fill: none;
+            stroke: #000000;
+            stroke-width: 2;
+            stroke-dasharray: 5 4;
+        }
+
+        .water-level {
+            stroke: #000000;
+            stroke-width: 2;
+            stroke-dasharray: 8 6;
+            fill: none;
+        }
+        
+        .droplet {
+            fill: #000000;
+        }
+
+        .dotted-line {
+            stroke: #000000;
+            stroke-width: 1.5;
+            stroke-dasharray: 2 4;
+            stroke-linecap: round;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="paper max-w-[800px] w-full p-6 relative">
+        
+        <!-- Schematic Diagram -->
+        <div class="w-full overflow-hidden bg-white border-2 border-black p-2">
+            <svg viewBox="0 0 700 700" class="w-full h-auto bg-[#f8fafc]">
+                
+                <!-- Grid Background -->
+                <defs>
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1"/>
+                    </pattern>
+                </defs>
+                <rect x="0" y="0" width="700" height="700" fill="url(#grid)" />
+
+
+                <!-- ========================================== -->
+                <!-- TUBING (Drawn first so it sits behind)     -->
+                <!-- ========================================== -->
+
+                <!-- Tube 1 (Left) -->
+                <path d="M 200 180 L 200 495" class="tube-outline" />
+                <path d="M 200 180 L 200 495" class="tube-inner" />
+                <path d="M 200 180 L 200 495" class="tube-dash" />
+
+                <!-- Tube 2 (Right) -->
+                <path d="M 500 180 L 500 495" class="tube-outline" />
+                <path d="M 500 180 L 500 495" class="tube-inner" />
+                <path d="M 500 180 L 500 495" class="tube-dash" />
+
+
+                <!-- ========================================== -->
+                <!-- TOP RESERVOIRS                             -->
+                <!-- ========================================== -->
+
+                <!-- Chemical Reservoir 1 (pH DOWN) -->
+                <rect x="180" y="35" width="40" height="15" fill="#ffffff" stroke="#000" stroke-width="2" />
+                <rect x="100" y="50" width="200" height="130" class="diagram-box" />
+                
+                <text x="200" y="85" text-anchor="middle" font-weight="bold">pH DOWN</text>
+                <text x="200" y="110" text-anchor="middle">Phosphoric Acid</text>
+                <!-- Fluid level dashed line -->
+                <line x1="102" y1="125" x2="298" y2="125" stroke="#000" stroke-dasharray="5 3" />
+                <text x="200" y="145" text-anchor="middle" font-style="italic">(H3PO4)</text>
+
+                <!-- Chemical Reservoir 2 (pH UP) -->
+                <rect x="480" y="35" width="40" height="15" fill="#ffffff" stroke="#000" stroke-width="2" />
+                <rect x="400" y="50" width="200" height="130" class="diagram-box" />
+                
+                <text x="500" y="85" text-anchor="middle" font-weight="bold">pH UP</text>
+                <text x="500" y="110" text-anchor="middle">Potassium Hyd.</text>
+                <!-- Fluid level dashed line -->
+                <line x1="402" y1="125" x2="598" y2="125" stroke="#000" stroke-dasharray="5 3" />
+                <text x="500" y="145" text-anchor="middle" font-style="italic">(KOH)</text>
+
+
+                <!-- ========================================== -->
+                <!-- PUMP 1 (LEFT)                              -->
+                <!-- ========================================== -->
+                
+                <!-- Pump Body -->
+                <rect x="145" y="250" width="110" height="110" fill="#1e293b" rx="12" />
+                <circle cx="200" cy="305" r="45" fill="#ffffff" stroke="#000" stroke-width="2" />
+                
+                <!-- Tubing Arc inside Pump -->
+                <path d="M 165 305 A 35 35 0 0 0 235 305" fill="none" stroke="#1f2937" stroke-width="10" />
+                
+                <!-- Rotor & Center -->
+                <polygon points="195,285 205,285 220,305 205,325 195,325 180,305" fill="#334155" transform="rotate(30 200 305)" />
+                <circle cx="200" cy="305" r="12" fill="#000" />
+                
+                <!-- Rollers -->
+                <circle cx="200" cy="275" r="9" fill="#94a3b8" stroke="#000" stroke-width="1.5" />
+                <circle cx="226" cy="320" r="9" fill="#94a3b8" stroke="#000" stroke-width="1.5" />
+                <circle cx="174" cy="320" r="9" fill="#94a3b8" stroke="#000" stroke-width="1.5" />
+
+                <!-- Text Background Mask (Prevents tube overlap) -->
+                <rect x="135" y="375" width="130" height="20" fill="#f8fafc" />
+                <text x="200" y="390" text-anchor="middle" font-weight="bold">Pump 1 (Down)</text>
+
+
+                <!-- ========================================== -->
+                <!-- PUMP 2 (RIGHT)                             -->
+                <!-- ========================================== -->
+                
+                <!-- Pump Body -->
+                <rect x="445" y="250" width="110" height="110" fill="#1e293b" rx="12" />
+                <circle cx="500" cy="305" r="45" fill="#ffffff" stroke="#000" stroke-width="2" />
+                
+                <!-- Tubing Arc inside Pump -->
+                <path d="M 465 305 A 35 35 0 0 0 535 305" fill="none" stroke="#1f2937" stroke-width="10" />
+                
+                <!-- Rotor & Center -->
+                <polygon points="495,285 505,285 520,305 505,325 495,325 480,305" fill="#334155" transform="rotate(15 500 305)" />
+                <circle cx="500" cy="305" r="12" fill="#000" />
+                
+                <!-- Rollers -->
+                <circle cx="510" cy="276" r="9" fill="#94a3b8" stroke="#000" stroke-width="1.5" />
+                <circle cx="522" cy="323" r="9" fill="#94a3b8" stroke="#000" stroke-width="1.5" />
+                <circle cx="473" cy="312" r="9" fill="#94a3b8" stroke="#000" stroke-width="1.5" />
+
+                <!-- Text Background Mask (Prevents tube overlap) -->
+                <rect x="435" y="375" width="130" height="20" fill="#f8fafc" />
+                <text x="500" y="390" text-anchor="middle" font-weight="bold">Pump 2 (Up)</text>
+
+
+                <!-- ========================================== -->
+                <!-- DROPLETS & VOLUME TEXT                     -->
+                <!-- ========================================== -->
+                
+                <path d="M 200 485 C 190 500, 190 510, 200 515 C 210 510, 210 500, 200 485 Z" class="droplet" />
+                <path d="M 500 485 C 490 500, 490 510, 500 515 C 510 510, 510 500, 500 485 Z" class="droplet" />
+
+                <!-- Dotted lines connecting the droplets to the text -->
+                <line x1="225" y1="500" x2="275" y2="500" class="dotted-line" />
+                
+                <rect x="280" y="485" width="140" height="20" fill="#f8fafc" />
+                <text x="350" y="505" text-anchor="middle" font-weight="bold">V_min ≈ 0.027 mL</text>
+                
+                <line x1="425" y1="500" x2="475" y2="500" class="dotted-line" />
+
+
+                <!-- ========================================== -->
+                <!-- BOTTOM RESERVOIR                           -->
+                <!-- ========================================== -->
+
+                <!-- Water Fill (Drawn behind the box lines) -->
+                <path d="M 122 575 Q 230 550, 350 575 T 578 575 L 578 668 L 122 668 Z" fill="#eff6ff" />
+                
+                <rect x="120" y="530" width="460" height="140" class="diagram-box" fill="none" />
+                
+                <!-- Wavy dashed water level -->
+                <path d="M 120 575 Q 235 550, 350 575 T 580 575" class="water-level" />
+                
+                <text x="350" y="620" text-anchor="middle" font-weight="bold" font-size="16">50L Nutrient Reservoir</text>
+                <text x="350" y="645" text-anchor="middle" font-weight="bold" font-size="16">Target pH: 6.2</text>
+
+            </svg>
+        </div>
+
+    </div>
+
+</body>
+</html>
