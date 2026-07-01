@@ -42,25 +42,25 @@ The project is strictly segmented into four isolated tiers to ensure that high-v
 ##  Installation & Setup
 
 **1. Clone the Repository**
-```bash
+
 git clone [https://github.com/gowthamde24/VF.git](https://github.com/gowthamde24/VF.git)
 cd VF
 
 **2. Set up the Virtual Environment & Dependencies**
-```bash
+
 python3 -m venv env
 source env/bin/activate
 pip install RPi.GPIO adafruit-circuitpython-ads1x15 adafruit-circuitpython-bme280
 
 **3. Clone the Repository**
-```bash
+
 sudo cp growsmart.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable growsmart.service
 sudo systemctl start growsmart.service
 
 **4. Launch the Dashboard**
-```bash
+
 http://<RASPBERRY_PI_IP>:8000/stunning_dashboard.html
 
 
