@@ -37,11 +37,11 @@ ADC_SETTLING_TIME = 0.05
 WATER_DURATION = 600        
 WATER_INTERVAL = 600      
 
-PH_DOWN_DURATION = 0.0      
-PH_UP_DURATION   = 0.0      
+PH_DOWN_DURATION = 0.5      
+PH_UP_DURATION   = 0.5      
 
-NUTRI_A_DURATION = 0.0      
-NUTRI_B_DURATION = 0.0      
+NUTRI_A_DURATION = 0.5      
+NUTRI_B_DURATION = 0.5      
 
 PUMP_MIX_TIME = 180         
 DOSE_WAIT_TIME = 1500       
@@ -55,9 +55,9 @@ LIGHT_START_HOUR = 6
 LIGHT_END_HOUR = 24         
 
 TARGET_PH = 6.2             
-PH_TOLERANCE = 1.5         
+PH_TOLERANCE = 0.8         
 TARGET_EC = 1.2            
-EC_TOLERANCE = 0.9         
+EC_TOLERANCE = 0.5         
 
 # --- FAIL-SAFE & HARDWARE LIMITS ---
 MAX_CONSECUTIVE_DOSES = 5   
