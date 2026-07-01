@@ -1,124 +1,78 @@
-# DESIGN AND IMPLEMENTATION OF AN INTELLIGENT VERTICAL FARMING SYSTEM USING IOT AND MACHINE LEARNING
+# Grow Smart OS 🌱
 
-Automated Hydroponic Control System using Raspberry Pi 5
+**An Autonomous, IoT-Based Cyber-Physical System for Hydroponic Vertical Farming**
 
-This project is a fully automated control system for a vertical farm. It manages irrigation, climate control, and water chemistry (pH/EC) using a Raspberry Pi 5, an 8-channel relay module, and a network of sensors. It features a Machine Learning engine for anomaly detection and a live web dashboard.
+Grow Smart OS is a fully autonomous, four-layer Cyber-Physical System (CPS) engineered specifically for the resilient hydroponic cultivation of polycultures. Designed to overcome the vulnerabilities of "Thin Edge" cloud-dependent systems, it operates on a "Thick Edge" computing paradigm, ensuring 100% offline autonomy and absolute hardware protection.
 
-## 🏗️ Hardware Architecture
+##  Key Features
 
-### Controller & Logic
-- Main Controller: Raspberry Pi 5 (running Python 3 logic)
-- Power: 12V PSU (for actuators) + 5V Buck Converter (for Pi/Sensors)
-- Control Box: Centralized terminal block wiring (No Breadboards!)
+* **Thick Edge Autonomy:** All decision-making, data logging, and UI hosting are performed locally on the edge device, eliminating cloud latency and network dependency.
+* **Deterministic Rule-Based Engine:** Utilizes rigid hysteresis deadbands and a proprietary "Pulse-and-Wait" micro-dosing algorithm to perfectly regulate fluid diffusion and prevent chemical oscillation.
+* **Asynchronous Multithreading:** Separates the 100Hz real-time hardware polling loop from the local web server, preventing blocking I/O and latency during mechanical actuation.
+* **Software-Based Galvanic Isolation:** Implements precise 120-second settling delays (`PH_SETTLING_TIME`) and state-holding to eliminate active galvanic interference ("Motor Drop") and endless dosing loops during the switching of heavy inductive loads.
+* **Hardware Fail-Safes:** Features an Active-Low logic topology with opto-isolated relays, ensuring that all 12V pumps fail to a safe "OFF" state upon system reboot or kernel panic.
+* **Glassmorphism Dashboard:** A localized, zero-latency Human-Machine Interface (HMI) built with asynchronous JSON serialization and reverse proxy tunneling for secure global overrides.
 
-### Sensors (Inputs)
-- BME280 (I2C): Air Temperature & Humidity
-- ADS1115 (I2C): 16-bit ADC for Analog Sensors
-- pH Probe (Analog A0): Water Acidity
-- EC Probe (Analog A1): Nutrient Strength
-- Water Level Sensor (Analog A2): Tank Safety Cutoff
+##  System Architecture
 
-### Actuators (Outputs - 8 Channel Relay)
+The project is strictly segmented into four isolated tiers to ensure that high-voltage physical actuation does not electrically interfere with low-voltage digital logic:
 
-| Relay | GPIO | Device | Function |
-|------:|-----:|--------|----------|
-| 1 | 5 | Water Pump | Irrigation Cycle (5 min/hr) |
-| 2 | 6 | Grow Lights | Day/Night Cycle (06:00-20:00) |
-| 3 | 13 | Fan1 | Cooling (if Temp > 25°C) |
-| 4 | 19 | pH Down Pump | Acid Dosing (if pH > 6.5) |
-| 5 | 26 | pH Up Pump | Base Dosing (if pH < 5.5) |
-| 6 | 16 | Nutrient_a | Vegetative Growth |
-| 7 | 20 | Nutrient_b | Bloom Growth |
-| 8 | 21 | Fan2 | Cooling (if Temp > 25°C) |
+1. **Layer 1 (Physical):** 50-Liter Nutrient Reservoir and UV-blocking PVC NFT channels.
+2. **Layer 2 (Perception & Actuation):** 16-bit ADC (ADS1115), BME280 Climate Sensor, Capacitive Water Level Sensor (XKC-Y25-V), and 12V Peristaltic/Centrifugal pumps.
+3. **Layer 3 (Cyber/Logic):** Raspberry Pi 4 Model B running the multithreaded Python control loop.
+4. **Layer 4 (Application):** AJAX-driven local web dashboard with real-time JSON state serialization.
 
-## 🚀 Installation Guide
+##  Hardware Stack
 
-### Prerequisites
-- Raspberry Pi 5 with Raspberry Pi OS (Bookworm)
-- Python 3.11+
-- I2C Interface Enabled (sudo raspi-config -> Interface Options -> I2C)
+* **Core Processing:** Raspberry Pi 4 Model B (Broadcom BCM2711)
+* **Analog-to-Digital Converter:** ADS1115 (16-bit precision for sub-millivolt pH/EC reading)
+* **Environmental Sensor:** Bosch BME280 (Temperature, Humidity, VPD calculation)
+* **Fluid Level Sensor:** XKC-Y25-V (Non-contact capacitive sensor)
+* **Relay Plane:** 8-Channel Opto-Isolated Relay Module (Active-Low)
+* **Power Management:** High-Efficiency 12V to 5.1V Buck Converter (92% Efficiency)
+* **Protection:** Custom 3D-printed IP54-rated PLA enclosures with TPU vibration-damping mounts
 
-## 1. Set Up Virtual Environment
-Run these commands on your Raspberry Pi terminal:
+##  Software Stack
 
+* **Backend:** Python 3 (Native `threading` module, `socketserver.TCPServer`)
+* **Data Serialization:** File-based JSON state management & CSV persistent logging
+* **Frontend UI:** HTML5, CSS3 Grid, JavaScript (AJAX Fetch API), SVG Kinetic Animations
+* **Process Manager:** Linux `systemd` daemon for automated crash recovery
+
+##  Installation & Setup
+
+**1. Clone the Repository**
 ```bash
-### Create project folder
-mkdir vertical_farm
-cd vertical_farm
+git clone [https://github.com/gowthamde24/VF.git](https://github.com/gowthamde24/VF.git)
+cd VF
 
-### Create virtual environment (with access to system GPIO libs)
-python3 -m venv venv --system-site-packages
-
-### Activate it
-source venv/bin/activate
-
-## 2. Install Dependencies
-
-Install all required Python libraries for sensors, ML, and GPIO libraries.
-
+**2. Set up the Virtual Environment & Dependencies**
 ```bash
-pip install adafruit-circuitpython-bme280 adafruit-circuitpython-ads1x15 adafruit-blinka smbus2 rpi-lgpio scikit-learn pandas numpy joblib
+python3 -m venv env
+source env/bin/activate
+pip install RPi.GPIO adafruit-circuitpython-ads1x15 adafruit-circuitpython-bme280
 
-
-## 3. Deploy Code
-
-Copy the following files into the `vertical_farm` folder:
-
-- `vf_main.py` (Master Logic)
-- `config.py` (Settings & Pins)
-- `ml_engine.py` (AI Anomaly Detector)
-- `diagnostics.py` (Testing Tool)
-- `stunning_dashboard.html` (Live Web UI)
-
-## 🛠️ Usage
-
-### A. Run Diagnostics (Test Mode)
-
-Before running the main loop, test your wiring manually:
-
+**3. Clone the Repository**
 ```bash
-python3 diagnostics.py
+sudo cp growsmart.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable growsmart.service
+sudo systemctl start growsmart.service
 
-
-Use the menu to toggle relays 1-8 and read sensor values.
-
-### B. Start the Main System
-
-Run the automated controller:
-
+**4. Launch the Dashboard**
 ```bash
-python3 vf_main.py
+http://<RASPBERRY_PI_IP>:8000/stunning_dashboard.html
 
-The system will start reading sensors, controlling relays, and printing status logs.
 
-### C. View Live Dashboard
+## Authors
+Gowtham Reddy Sodanapalli - Hardware Architecture & Implementation
 
-To see the stunning graphical interface on your screen:
+Sai Kalyani Yerrasani - Software Integration & Automation Dashboard
 
-1. Keep `vf_main.py` running (it generates `dashboard.json`).
-2. Open a new terminal window.
-3. Start a local web server:
+Syeda Khadeeja Naqvi - Botanical Growth & Agronomy
 
-```bash
-python3 -m http.server 8000
+Charishma Sai Pinnemaneni - 3D Modelling & Hardware Protection
 
-Open the browser (Chromium) on the Pi and go to:
+Developed for the Master’s Degree Program in Information Technology at TH OWL (University of Applied Sciences and Arts)
 
-```text
-http://localhost:8000/stunning_dashboard.html
 
-## 🧠 Machine Learning Engine
-
-The system uses an Isolation Forest algorithm (`ml_engine.py`) to detect anomalies.
-
-- **Training:** It learns "Normal" behavior from your sensor data over time.
-- **Inference:** Every cycle, it checks if the current combination of Temperature, Humidity, and pH looks "weird" (e.g., Temp rising but Fan is off).
-- **Alert:** If an anomaly is found, it flags an alert on the Dashboard.
-
-## ⚠️ Safety Features
-
-- **Water Level Safety:** If the tank sensor reads EMPTY (< 1.5V), the Main Pump is forced OFF to prevent burning out.
-- **Thermal Cutoff:** If Air Temp > 30°C, Grow Lights are forced OFF to cool the system.
-- **Dosing Lockout:** After adding pH chemicals, the system waits 15 minutes before dosing again to prevent overdose.
-
-Project Status: Production Ready 🟢
