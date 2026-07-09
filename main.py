@@ -184,7 +184,7 @@ def run_control_loop():
             time.sleep(0.5) # Let water stabilize
             
             # Step B: Read pH using ORMA (Outlier Removal)
-            PH_SETTLING_TIME = 120 # Wait 60s after pump turns off for water to electrically settle
+            PH_SETTLING_TIME = 120 # Wait 120s after pump turns off for water to electrically settle
             
             if is_watering or (cur_time - last_water_time < PH_SETTLING_TIME):
                 ph_val = last_good_ph # Freeze pH reading
@@ -254,7 +254,7 @@ def run_control_loop():
             GPIO.output(config.RELAYS['water_pump'], GPIO.LOW)
         elif is_watering and (cur_time - water_start_time > config.WATER_DURATION):
             is_watering = False
-            last_water_time = cur_time # This triggers the 60s cooldown for regular watering!
+            last_water_time = cur_time # Triggers 120s settling cooldown!
             GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
     else:
         if is_watering: last_water_time = cur_time # Safety catch
@@ -265,9 +265,11 @@ def run_control_loop():
         pump_state = "ON"
         if not safe_mode: current_activity = "Irrigation"
 
-    # --- 8. CHEMICAL DOSING (pH Only for now) ---
+    # --- 8. CHEMICAL & NUTRIENT DOSING ---
     if not safe_mode and water_ok and (cur_time - last_dose_time > config.DOSE_WAIT_TIME):
         dosed = False
+        
+        # A. Check pH Down (Too Alkaline)
         if ph_val > (config.TARGET_PH + config.PH_TOLERANCE):
             if consecutive_ph_doses < config.MAX_CONSECUTIVE_DOSES:
                 current_activity = "Dosing: pH Down (Mixing...)" 
@@ -280,11 +282,13 @@ def run_control_loop():
                 time.sleep(config.PUMP_MIX_TIME)
                 if not is_watering: 
                     GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
-                    last_water_time = time.time() # This triggers the 60s cooldown after mixing!
+                    last_water_time = time.time() # Triggers 120s settling cooldown!
                 dosed = True
                 consecutive_ph_doses += 1
             else:
                 current_activity = "FAIL-SAFE: pH Pump Locked."
+                
+        # B. Check pH Up (Too Acidic)
         elif ph_val < (config.TARGET_PH - config.PH_TOLERANCE):
             if consecutive_ph_doses < config.MAX_CONSECUTIVE_DOSES:
                 current_activity = "Dosing: pH Up (Mixing...)" 
@@ -297,11 +301,40 @@ def run_control_loop():
                 time.sleep(config.PUMP_MIX_TIME)
                 if not is_watering: 
                     GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
-                    last_water_time = time.time() # This triggers the 60s cooldown after mixing!
+                    last_water_time = time.time() # Triggers 120s settling cooldown!
                 dosed = True
                 consecutive_ph_doses += 1
             else:
                 current_activity = "FAIL-SAFE: pH Pump Locked."
+                
+        # C. Check Nutrients (EC Too Low)
+        elif ec_val < (config.TARGET_EC - config.EC_TOLERANCE):
+            current_activity = "Dosing: Nutrients A & B (Mixing...)" 
+            pump_state = "ON"
+            update_dashboard_file(t, h, ph_val, ec_val, water_level_pct, light_state, fan_state, pump_state, safety_str, current_activity, sys_health)
+            
+            # Start mixing pump
+            GPIO.output(config.RELAYS['water_pump'], GPIO.LOW)
+            
+            # Pulse Nutrient A (FloraMicro)
+            GPIO.output(config.RELAYS['nutrient_a'], GPIO.LOW)
+            time.sleep(config.NUTRI_A_DURATION)
+            GPIO.output(config.RELAYS['nutrient_a'], GPIO.HIGH)
+            
+            time.sleep(1.0) # Brief safety pause between chemicals
+            
+            # Pulse Nutrient B (FloraBloom)
+            GPIO.output(config.RELAYS['nutrient_b'], GPIO.LOW)
+            time.sleep(config.NUTRI_B_DURATION)
+            GPIO.output(config.RELAYS['nutrient_b'], GPIO.HIGH)
+            
+            # Mix thoroughly in the 50L tank
+            time.sleep(config.PUMP_MIX_TIME)
+            if not is_watering: 
+                GPIO.output(config.RELAYS['water_pump'], GPIO.HIGH)
+                last_water_time = time.time() # Triggers 120s settling cooldown!
+            dosed = True
+            
         else:
             consecutive_ph_doses = 0 
             

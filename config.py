@@ -54,9 +54,9 @@ HUM_TOLERANCE = 10.0
 LIGHT_START_HOUR = 6        
 LIGHT_END_HOUR = 24         
 
-TARGET_PH = 6.2             
-PH_TOLERANCE = 0.8         
-TARGET_EC = 1.2            
+TARGET_PH = 6.0             
+PH_TOLERANCE = 1.0         
+TARGET_EC = 1.0           
 EC_TOLERANCE = 0.5         
 
 # --- FAIL-SAFE & HARDWARE LIMITS ---
